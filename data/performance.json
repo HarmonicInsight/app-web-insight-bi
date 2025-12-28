@@ -1,0 +1,263 @@
+{
+  "summary": {
+    "totalRevenue": 9250000000,
+    "totalGrossProfit": 1350000000,
+    "grossMarginRate": 14.59,
+    "totalRemainingWork": 11500000000,
+    "operatingProfit": 520000000,
+    "fiscalYear": "2025年度上期",
+    "asOfDate": "2025年9月末時点",
+    "previousYearRevenue": 8800000000,
+    "previousYearGrossProfit": 1210000000
+  },
+  "targets": {
+    "revenue": 10000000000,
+    "grossProfit": 1500000000,
+    "grossMarginRate": 15.0,
+    "remainingWork": 12000000000,
+    "branchMarginTarget": 12.0,
+    "segmentMarginTarget": 13.0
+  },
+  "thresholds": {
+    "marginGood": 14.0,
+    "marginWarning": 10.0,
+    "marginCritical": 5.0,
+    "revenueAchievementGood": 95,
+    "revenueAchievementWarning": 80
+  },
+  "branchPerformance": [
+    {
+      "branch": "東京本社",
+      "target": { "revenue": 3500000000, "grossProfit": 525000000, "grossMargin": 15.0 },
+      "segments": {
+        "SaaS": { "revenue": 1200000000, "grossProfit": 192000000, "grossMargin": 16.00 },
+        "AI/ML": { "revenue": 850000000, "grossProfit": 127500000, "grossMargin": 15.00 },
+        "クラウド": { "revenue": 620000000, "grossProfit": 86800000, "grossMargin": 14.00 },
+        "セキュリティ": { "revenue": 420000000, "grossProfit": 58800000, "grossMargin": 14.00 },
+        "データ分析": { "revenue": 280000000, "grossProfit": 39200000, "grossMargin": 14.00 },
+        "コンサル": { "revenue": 180000000, "grossProfit": 25200000, "grossMargin": 14.00 }
+      },
+      "total": { "revenue": 3550000000, "grossProfit": 529500000, "grossMargin": 14.92 }
+    },
+    {
+      "branch": "大阪支社",
+      "target": { "revenue": 2200000000, "grossProfit": 308000000, "grossMargin": 14.0 },
+      "segments": {
+        "SaaS": { "revenue": 720000000, "grossProfit": 100800000, "grossMargin": 14.00 },
+        "AI/ML": { "revenue": 480000000, "grossProfit": 67200000, "grossMargin": 14.00 },
+        "クラウド": { "revenue": 380000000, "grossProfit": 49400000, "grossMargin": 13.00 },
+        "セキュリティ": { "revenue": 280000000, "grossProfit": 36400000, "grossMargin": 13.00 },
+        "データ分析": { "revenue": 180000000, "grossProfit": 23400000, "grossMargin": 13.00 },
+        "コンサル": { "revenue": 120000000, "grossProfit": 15600000, "grossMargin": 13.00 }
+      },
+      "total": { "revenue": 2160000000, "grossProfit": 292800000, "grossMargin": 13.56 }
+    },
+    {
+      "branch": "名古屋支社",
+      "target": { "revenue": 1500000000, "grossProfit": 195000000, "grossMargin": 13.0 },
+      "segments": {
+        "SaaS": { "revenue": 480000000, "grossProfit": 62400000, "grossMargin": 13.00 },
+        "AI/ML": { "revenue": 320000000, "grossProfit": 41600000, "grossMargin": 13.00 },
+        "クラウド": { "revenue": 280000000, "grossProfit": 33600000, "grossMargin": 12.00 },
+        "セキュリティ": { "revenue": 180000000, "grossProfit": 21600000, "grossMargin": 12.00 },
+        "データ分析": { "revenue": 120000000, "grossProfit": 14400000, "grossMargin": 12.00 },
+        "コンサル": { "revenue": 80000000, "grossProfit": 9600000, "grossMargin": 12.00 }
+      },
+      "total": { "revenue": 1460000000, "grossProfit": 183200000, "grossMargin": 12.55 }
+    },
+    {
+      "branch": "福岡支社",
+      "target": { "revenue": 1200000000, "grossProfit": 156000000, "grossMargin": 13.0 },
+      "segments": {
+        "SaaS": { "revenue": 380000000, "grossProfit": 49400000, "grossMargin": 13.00 },
+        "AI/ML": { "revenue": 260000000, "grossProfit": 33800000, "grossMargin": 13.00 },
+        "クラウド": { "revenue": 220000000, "grossProfit": 26400000, "grossMargin": 12.00 },
+        "セキュリティ": { "revenue": 150000000, "grossProfit": 18000000, "grossMargin": 12.00 },
+        "データ分析": { "revenue": 100000000, "grossProfit": 12000000, "grossMargin": 12.00 },
+        "コンサル": { "revenue": 70000000, "grossProfit": 8400000, "grossMargin": 12.00 }
+      },
+      "total": { "revenue": 1180000000, "grossProfit": 148000000, "grossMargin": 12.54 }
+    },
+    {
+      "branch": "札幌支社",
+      "target": { "revenue": 800000000, "grossProfit": 96000000, "grossMargin": 12.0 },
+      "segments": {
+        "SaaS": { "revenue": 250000000, "grossProfit": -12500000, "grossMargin": -5.00 },
+        "AI/ML": { "revenue": 180000000, "grossProfit": 9000000, "grossMargin": 5.00 },
+        "クラウド": { "revenue": 150000000, "grossProfit": 10500000, "grossMargin": 7.00 },
+        "セキュリティ": { "revenue": 100000000, "grossProfit": 7000000, "grossMargin": 7.00 },
+        "データ分析": { "revenue": 70000000, "grossProfit": 4900000, "grossMargin": 7.00 },
+        "コンサル": { "revenue": 50000000, "grossProfit": 3500000, "grossMargin": 7.00 }
+      },
+      "total": { "revenue": 800000000, "grossProfit": 22400000, "grossMargin": 2.80 }
+    },
+    {
+      "branch": "海外事業部",
+      "target": { "revenue": 800000000, "grossProfit": 200000000, "grossMargin": 25.0 },
+      "segments": {
+        "SaaS": { "revenue": 280000000, "grossProfit": 70000000, "grossMargin": 25.00 },
+        "AI/ML": { "revenue": 220000000, "grossProfit": 55000000, "grossMargin": 25.00 },
+        "クラウド": { "revenue": 150000000, "grossProfit": 36000000, "grossMargin": 24.00 },
+        "セキュリティ": { "revenue": 80000000, "grossProfit": 19200000, "grossMargin": 24.00 },
+        "データ分析": { "revenue": 50000000, "grossProfit": 12000000, "grossMargin": 24.00 },
+        "コンサル": { "revenue": 20000000, "grossProfit": 4800000, "grossMargin": 24.00 }
+      },
+      "total": { "revenue": 800000000, "grossProfit": 197000000, "grossMargin": 24.63 }
+    }
+  ],
+  "remainingWork": [
+    {
+      "branch": "東京本社",
+      "segments": {
+        "SaaS": { "remaining": 1100000000, "expectedProfit": 165000000, "expectedMargin": 15.00 },
+        "AI/ML": { "remaining": 780000000, "expectedProfit": 109200000, "expectedMargin": 14.00 },
+        "クラウド": { "remaining": 520000000, "expectedProfit": 67600000, "expectedMargin": 13.00 },
+        "セキュリティ": { "remaining": 380000000, "expectedProfit": 49400000, "expectedMargin": 13.00 },
+        "データ分析": { "remaining": 250000000, "expectedProfit": 32500000, "expectedMargin": 13.00 },
+        "コンサル": { "remaining": 150000000, "expectedProfit": 19500000, "expectedMargin": 13.00 }
+      },
+      "total": { "remaining": 3180000000, "expectedProfit": 443200000, "expectedMargin": 13.94 }
+    },
+    {
+      "branch": "大阪支社",
+      "segments": {
+        "SaaS": { "remaining": 680000000, "expectedProfit": 95200000, "expectedMargin": 14.00 },
+        "AI/ML": { "remaining": 450000000, "expectedProfit": 58500000, "expectedMargin": 13.00 },
+        "クラウド": { "remaining": 350000000, "expectedProfit": 42000000, "expectedMargin": 12.00 },
+        "セキュリティ": { "remaining": 260000000, "expectedProfit": 31200000, "expectedMargin": 12.00 },
+        "データ分析": { "remaining": 170000000, "expectedProfit": 20400000, "expectedMargin": 12.00 },
+        "コンサル": { "remaining": 100000000, "expectedProfit": 12000000, "expectedMargin": 12.00 }
+      },
+      "total": { "remaining": 2010000000, "expectedProfit": 259300000, "expectedMargin": 12.90 }
+    },
+    {
+      "branch": "名古屋支社",
+      "segments": {
+        "SaaS": { "remaining": 450000000, "expectedProfit": 58500000, "expectedMargin": 13.00 },
+        "AI/ML": { "remaining": 300000000, "expectedProfit": 36000000, "expectedMargin": 12.00 },
+        "クラウド": { "remaining": 260000000, "expectedProfit": 28600000, "expectedMargin": 11.00 },
+        "セキュリティ": { "remaining": 170000000, "expectedProfit": 18700000, "expectedMargin": 11.00 },
+        "データ分析": { "remaining": 110000000, "expectedProfit": 12100000, "expectedMargin": 11.00 },
+        "コンサル": { "remaining": 70000000, "expectedProfit": 7700000, "expectedMargin": 11.00 }
+      },
+      "total": { "remaining": 1360000000, "expectedProfit": 161600000, "expectedMargin": 11.88 }
+    },
+    {
+      "branch": "福岡支社",
+      "segments": {
+        "SaaS": { "remaining": 360000000, "expectedProfit": 46800000, "expectedMargin": 13.00 },
+        "AI/ML": { "remaining": 240000000, "expectedProfit": 28800000, "expectedMargin": 12.00 },
+        "クラウド": { "remaining": 200000000, "expectedProfit": 22000000, "expectedMargin": 11.00 },
+        "セキュリティ": { "remaining": 140000000, "expectedProfit": 15400000, "expectedMargin": 11.00 },
+        "データ分析": { "remaining": 90000000, "expectedProfit": 9900000, "expectedMargin": 11.00 },
+        "コンサル": { "remaining": 60000000, "expectedProfit": 6600000, "expectedMargin": 11.00 }
+      },
+      "total": { "remaining": 1090000000, "expectedProfit": 129500000, "expectedMargin": 11.88 }
+    },
+    {
+      "branch": "札幌支社",
+      "segments": {
+        "SaaS": { "remaining": 230000000, "expectedProfit": 23000000, "expectedMargin": 10.00 },
+        "AI/ML": { "remaining": 160000000, "expectedProfit": 14400000, "expectedMargin": 9.00 },
+        "クラウド": { "remaining": 130000000, "expectedProfit": 10400000, "expectedMargin": 8.00 },
+        "セキュリティ": { "remaining": 90000000, "expectedProfit": 7200000, "expectedMargin": 8.00 },
+        "データ分析": { "remaining": 60000000, "expectedProfit": 4800000, "expectedMargin": 8.00 },
+        "コンサル": { "remaining": 40000000, "expectedProfit": 3200000, "expectedMargin": 8.00 }
+      },
+      "total": { "remaining": 710000000, "expectedProfit": 63000000, "expectedMargin": 8.87 }
+    },
+    {
+      "branch": "海外事業部",
+      "segments": {
+        "SaaS": { "remaining": 320000000, "expectedProfit": 80000000, "expectedMargin": 25.00 },
+        "AI/ML": { "remaining": 250000000, "expectedProfit": 60000000, "expectedMargin": 24.00 },
+        "クラウド": { "remaining": 180000000, "expectedProfit": 41400000, "expectedMargin": 23.00 },
+        "セキュリティ": { "remaining": 100000000, "expectedProfit": 23000000, "expectedMargin": 23.00 },
+        "データ分析": { "remaining": 60000000, "expectedProfit": 13800000, "expectedMargin": 23.00 },
+        "コンサル": { "remaining": 30000000, "expectedProfit": 6900000, "expectedMargin": 23.00 }
+      },
+      "total": { "remaining": 940000000, "expectedProfit": 225100000, "expectedMargin": 23.95 }
+    }
+  ],
+  "profitImprovement": [
+    {
+      "branch": "東京本社",
+      "segments": {
+        "SaaS": { "initialProfit": 156000000, "finalProfit": 192000000, "improvement": 36000000 },
+        "AI/ML": { "initialProfit": 102000000, "finalProfit": 127500000, "improvement": 25500000 },
+        "クラウド": { "initialProfit": 68200000, "finalProfit": 86800000, "improvement": 18600000 },
+        "セキュリティ": { "initialProfit": 46200000, "finalProfit": 58800000, "improvement": 12600000 },
+        "データ分析": { "initialProfit": 30800000, "finalProfit": 39200000, "improvement": 8400000 },
+        "コンサル": { "initialProfit": 19800000, "finalProfit": 25200000, "improvement": 5400000 }
+      },
+      "total": { "initialProfit": 423000000, "finalProfit": 529500000, "improvement": 106500000 }
+    },
+    {
+      "branch": "大阪支社",
+      "segments": {
+        "SaaS": { "initialProfit": 79200000, "finalProfit": 100800000, "improvement": 21600000 },
+        "AI/ML": { "initialProfit": 52800000, "finalProfit": 67200000, "improvement": 14400000 },
+        "クラウド": { "initialProfit": 38000000, "finalProfit": 49400000, "improvement": 11400000 },
+        "セキュリティ": { "initialProfit": 28000000, "finalProfit": 36400000, "improvement": 8400000 },
+        "データ分析": { "initialProfit": 18000000, "finalProfit": 23400000, "improvement": 5400000 },
+        "コンサル": { "initialProfit": 12000000, "finalProfit": 15600000, "improvement": 3600000 }
+      },
+      "total": { "initialProfit": 228000000, "finalProfit": 292800000, "improvement": 64800000 }
+    },
+    {
+      "branch": "名古屋支社",
+      "segments": {
+        "SaaS": { "initialProfit": 48000000, "finalProfit": 62400000, "improvement": 14400000 },
+        "AI/ML": { "initialProfit": 32000000, "finalProfit": 41600000, "improvement": 9600000 },
+        "クラウド": { "initialProfit": 25200000, "finalProfit": 33600000, "improvement": 8400000 },
+        "セキュリティ": { "initialProfit": 16200000, "finalProfit": 21600000, "improvement": 5400000 },
+        "データ分析": { "initialProfit": 10800000, "finalProfit": 14400000, "improvement": 3600000 },
+        "コンサル": { "initialProfit": 7200000, "finalProfit": 9600000, "improvement": 2400000 }
+      },
+      "total": { "initialProfit": 139400000, "finalProfit": 183200000, "improvement": 43800000 }
+    },
+    {
+      "branch": "福岡支社",
+      "segments": {
+        "SaaS": { "initialProfit": 38000000, "finalProfit": 49400000, "improvement": 11400000 },
+        "AI/ML": { "initialProfit": 26000000, "finalProfit": 33800000, "improvement": 7800000 },
+        "クラウド": { "initialProfit": 19800000, "finalProfit": 26400000, "improvement": 6600000 },
+        "セキュリティ": { "initialProfit": 13500000, "finalProfit": 18000000, "improvement": 4500000 },
+        "データ分析": { "initialProfit": 9000000, "finalProfit": 12000000, "improvement": 3000000 },
+        "コンサル": { "initialProfit": 6300000, "finalProfit": 8400000, "improvement": 2100000 }
+      },
+      "total": { "initialProfit": 112600000, "finalProfit": 148000000, "improvement": 35400000 }
+    },
+    {
+      "branch": "札幌支社",
+      "segments": {
+        "SaaS": { "initialProfit": -25000000, "finalProfit": -12500000, "improvement": 12500000 },
+        "AI/ML": { "initialProfit": 0, "finalProfit": 9000000, "improvement": 9000000 },
+        "クラウド": { "initialProfit": 4500000, "finalProfit": 10500000, "improvement": 6000000 },
+        "セキュリティ": { "initialProfit": 3000000, "finalProfit": 7000000, "improvement": 4000000 },
+        "データ分析": { "initialProfit": 2100000, "finalProfit": 4900000, "improvement": 2800000 },
+        "コンサル": { "initialProfit": 1500000, "finalProfit": 3500000, "improvement": 2000000 }
+      },
+      "total": { "initialProfit": -13900000, "finalProfit": 22400000, "improvement": 36300000 }
+    },
+    {
+      "branch": "海外事業部",
+      "segments": {
+        "SaaS": { "initialProfit": 56000000, "finalProfit": 70000000, "improvement": 14000000 },
+        "AI/ML": { "initialProfit": 44000000, "finalProfit": 55000000, "improvement": 11000000 },
+        "クラウド": { "initialProfit": 28500000, "finalProfit": 36000000, "improvement": 7500000 },
+        "セキュリティ": { "initialProfit": 15200000, "finalProfit": 19200000, "improvement": 4000000 },
+        "データ分析": { "initialProfit": 9500000, "finalProfit": 12000000, "improvement": 2500000 },
+        "コンサル": { "initialProfit": 3800000, "finalProfit": 4800000, "improvement": 1000000 }
+      },
+      "total": { "initialProfit": 157000000, "finalProfit": 197000000, "improvement": 40000000 }
+    }
+  ],
+  "salesSimulation": {
+    "segments": ["SaaS", "AI/ML", "クラウド", "セキュリティ", "データ分析", "コンサル"],
+    "carryoverTotal": [2100000000, 1450000000, 1100000000, 850000000, 550000000, 350000000],
+    "currentForecast": [3310000000, 2310000000, 1700000000, 1210000000, 800000000, 520000000],
+    "targetRevenue": [3500000000, 2500000000, 1800000000, 1300000000, 900000000, 600000000],
+    "shortfall": [190000000, 190000000, 100000000, 90000000, 100000000, 80000000]
+  }
+}
