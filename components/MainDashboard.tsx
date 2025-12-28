@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Dashboard from '@/components/Dashboard';
 import DIDashboard from '@/components/DIDashboard';
+import ActionTracker from '@/components/ActionTracker';
 import { PerformanceData } from '@/lib/types';
 import { DashboardData } from '@/lib/processData';
 
@@ -36,10 +37,20 @@ const mainTabs = [
       </svg>
     ),
   },
+  {
+    id: 'action',
+    label: 'アクション管理',
+    description: '課題対応・フォローアップ',
+    icon: (
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    ),
+  },
 ];
 
 export default function MainDashboard({ performanceData, diData }: MainDashboardProps) {
-  const [activeMain, setActiveMain] = useState<'company' | 'di'>('company');
+  const [activeMain, setActiveMain] = useState<'company' | 'di' | 'action'>('company');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('');
@@ -161,7 +172,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               {mainTabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveMain(tab.id as 'company' | 'di')}
+                  onClick={() => setActiveMain(tab.id as 'company' | 'di' | 'action')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                     activeMain === tab.id
                       ? 'bg-white/20 text-white'
@@ -190,10 +201,16 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {activeMain === 'company' ? (
+        {activeMain === 'company' && (
           <Dashboard data={performanceData} diData={diData} />
-        ) : (
+        )}
+        {activeMain === 'di' && (
           <DIDashboard data={diData} />
+        )}
+        {activeMain === 'action' && (
+          <div className="h-full overflow-auto bg-slate-50 p-4">
+            <ActionTracker data={performanceData} />
+          </div>
         )}
       </div>
     </div>
