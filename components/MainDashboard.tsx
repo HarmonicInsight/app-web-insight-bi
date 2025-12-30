@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Dashboard from '@/components/Dashboard';
 import DIDashboard from '@/components/DIDashboard';
 import ActionTracker from '@/components/ActionTracker';
@@ -11,10 +11,6 @@ interface MainDashboardProps {
   performanceData: PerformanceData;
   diData: DashboardData;
 }
-
-// Demo credentials
-const VALID_USER = 'demo';
-const VALID_PASS = 'insight2025';
 
 const mainTabs = [
   {
@@ -56,29 +52,60 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check authentication on mount
-  useEffect(() => {
-    const auth = localStorage.getItem('insightbi_auth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
+  // Check authentication on mount (server-side session)
+  const checkSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/session');
+      const data = await res.json();
+      setIsAuthenticated(data.authenticated);
+    } catch (err) {
+      console.error('Session check failed:', err);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === VALID_USER && password === VALID_PASS) {
-      localStorage.setItem('insightbi_auth', 'true');
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError('ユーザー名またはパスワードが正しくありません');
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setIsAuthenticated(true);
+        setError('');
+      } else {
+        setError(data.error || 'ログインに失敗しました');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('サーバーに接続できません');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('insightbi_auth');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     setIsAuthenticated(false);
     setUsername('');
     setPassword('');
@@ -138,15 +165,16 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ログイン
+              {isSubmitting ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-            <p className="text-xs text-slate-500 text-center">
-              デモアカウント: demo / insight2025
+          <div className="mt-6 text-center">
+            <p className="text-xs text-slate-400">
+              © 2025 InsightBI. All rights reserved.
             </p>
           </div>
         </div>
