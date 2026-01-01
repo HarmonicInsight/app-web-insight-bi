@@ -324,3 +324,110 @@ export interface PeriodSelectorState {
   showForecast: boolean;
   showActual: boolean;
 }
+
+// ============================================
+// 意思決定ボックス
+// ============================================
+
+// 意思決定の緊急度
+export type DecisionUrgency = 'immediate' | 'this_week' | 'this_month' | 'this_quarter';
+
+// 意思決定のステータス
+export type DecisionStatus =
+  | 'pending'      // 判断待ち
+  | 'in_review'    // 検討中
+  | 'decided'      // 決定済み
+  | 'deferred'     // 保留
+  | 'escalated';   // エスカレーション
+
+// 意思決定のカテゴリ
+export type DecisionCategory =
+  | 'financial'    // 財務・予算
+  | 'operational'  // 業務・オペレーション
+  | 'strategic'    // 戦略
+  | 'hr'           // 人事・リソース
+  | 'project'      // プロジェクト
+  | 'risk';        // リスク管理
+
+// 意思決定ボックスのインプット情報
+export interface DecisionInput {
+  id: string;
+  label: string;
+  value: string | number;
+  unit?: string;
+  trend?: 'up' | 'down' | 'stable';
+  source: string;           // データソース
+  updatedAt: string;
+  isKey?: boolean;          // 重要指標かどうか
+}
+
+// 制約条件
+export interface DecisionConstraint {
+  id: string;
+  description: string;
+  type: 'hard' | 'soft';    // 絶対条件 / 考慮事項
+  impact: 'high' | 'medium' | 'low';
+}
+
+// 選択肢
+export interface DecisionOption {
+  id: string;
+  label: string;
+  description: string;
+  pros: string[];           // メリット
+  cons: string[];           // デメリット
+  estimatedImpact: {
+    revenue?: number;
+    cost?: number;
+    risk?: 'high' | 'medium' | 'low';
+    timeframe?: string;
+  };
+  recommendationScore?: number;  // 0-100
+  isRecommended?: boolean;
+}
+
+// 関連する意思決定
+export interface RelatedDecision {
+  id: string;
+  title: string;
+  relationship: 'blocks' | 'blocked_by' | 'related' | 'triggers';
+  status: DecisionStatus;
+}
+
+// 意思決定ボックス本体
+export interface DecisionBox {
+  id: string;
+  title: string;
+  purpose: string;          // 目的：何を決めるのか
+  category: DecisionCategory;
+  urgency: DecisionUrgency;
+  status: DecisionStatus;
+  owner: string;            // 決裁者
+  stakeholders: string[];   // 関係者
+
+  // 判断材料
+  inputs: DecisionInput[];
+  constraints: DecisionConstraint[];
+  options: DecisionOption[];
+
+  // 関連性
+  relatedDecisions: RelatedDecision[];
+
+  // タイミング
+  deadline?: string;
+  meetingDate?: string;     // 会議予定日
+
+  // 結果
+  outcome?: {
+    selectedOptionId: string;
+    decidedAt: string;
+    decidedBy: string;
+    rationale: string;
+    nextActions: string[];
+  };
+
+  // メタデータ
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+}

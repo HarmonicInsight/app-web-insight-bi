@@ -6,6 +6,7 @@ import Dashboard from '@/components/Dashboard';
 import DIDashboard from '@/components/DIDashboard';
 import ActionTracker from '@/components/ActionTracker';
 import SettingsModal from '@/components/SettingsModal';
+import DecisionDashboard from '@/components/DecisionDashboard';
 import { PerformanceData } from '@/lib/types';
 import { DashboardData } from '@/lib/processData';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
@@ -17,6 +18,16 @@ interface MainDashboardProps {
 }
 
 const mainTabs = [
+  {
+    id: 'decision',
+    label: '意思決定',
+    description: '判断が必要な案件一覧',
+    icon: (
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+  },
   {
     id: 'company',
     label: '全社ダッシュボード',
@@ -50,7 +61,7 @@ const mainTabs = [
 ];
 
 export default function MainDashboard({ performanceData, diData }: MainDashboardProps) {
-  const [activeMain, setActiveMain] = useState<'company' | 'di' | 'action'>('company');
+  const [activeMain, setActiveMain] = useState<'decision' | 'company' | 'di' | 'action'>('decision');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('');
@@ -230,7 +241,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               {mainTabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveMain(tab.id as 'company' | 'di' | 'action')}
+                  onClick={() => setActiveMain(tab.id as 'decision' | 'company' | 'di' | 'action')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                     activeMain === tab.id
                       ? 'bg-white/20 text-white'
@@ -295,6 +306,9 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
+        {activeMain === 'decision' && (
+          <DecisionDashboard />
+        )}
         {activeMain === 'company' && (
           <Dashboard data={performanceData} diData={diData} />
         )}
