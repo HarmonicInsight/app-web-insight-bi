@@ -8,6 +8,7 @@ import ActionTracker from '@/components/ActionTracker';
 import SettingsModal from '@/components/SettingsModal';
 import DecisionDashboard from '@/components/DecisionDashboard';
 import BusinessTreeDashboard from '@/components/BusinessTreeDashboard';
+import MonthlyFollowDashboard from '@/components/MonthlyFollowDashboard';
 import { PerformanceData } from '@/lib/types';
 import { DashboardData } from '@/lib/processData';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
@@ -19,6 +20,16 @@ interface MainDashboardProps {
 }
 
 const mainTabs = [
+  {
+    id: 'monthly',
+    label: '月次フォロー',
+    description: 'KPI予実管理・差異分析',
+    icon: (
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
   {
     id: 'kpi',
     label: '業務KPI',
@@ -72,7 +83,7 @@ const mainTabs = [
 ];
 
 export default function MainDashboard({ performanceData, diData }: MainDashboardProps) {
-  const [activeMain, setActiveMain] = useState<'kpi' | 'decision' | 'company' | 'di' | 'action'>('kpi');
+  const [activeMain, setActiveMain] = useState<'monthly' | 'kpi' | 'decision' | 'company' | 'di' | 'action'>('monthly');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('');
@@ -252,7 +263,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               {mainTabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveMain(tab.id as 'kpi' | 'decision' | 'company' | 'di' | 'action')}
+                  onClick={() => setActiveMain(tab.id as 'monthly' | 'kpi' | 'decision' | 'company' | 'di' | 'action')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                     activeMain === tab.id
                       ? 'bg-white/20 text-white'
@@ -317,6 +328,9 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
+        {activeMain === 'monthly' && (
+          <MonthlyFollowDashboard />
+        )}
         {activeMain === 'kpi' && (
           <BusinessTreeDashboard />
         )}
