@@ -15,10 +15,13 @@ import {
 import {
   pipelineStages,
   calculatePipelineSummary,
+  calculatePipelineSummaryByMonth,
   getWeightedTotal,
   getGrossTotal,
   pipelineAsOf,
   calculateDepartmentSummaries,
+  calculateDepartmentSummariesByMonth,
+  getPipelineByMonth,
   PipelineStage,
 } from '@/lib/pipelineData';
 import MonthlyGraphDashboard from './MonthlyGraphDashboard';
@@ -56,10 +59,13 @@ interface MonthlyFollowDashboardProps {
   onNavigateToPipeline?: (filter: { departmentId?: string; stage?: PipelineStage }) => void;
 }
 
+type PipelineViewMode = 'annual' | 'monthly';
+
 export default function MonthlyFollowDashboard({ onNavigateToPipeline }: MonthlyFollowDashboardProps) {
   const currentClosedMonth = getCurrentClosedMonth();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [selectedMonth, setSelectedMonth] = useState(currentClosedMonth);
+  const [pipelineViewMode, setPipelineViewMode] = useState<PipelineViewMode>('annual');
 
   // 選択月データ
   const currentData = useMemo(() =>
@@ -93,10 +99,20 @@ export default function MonthlyFollowDashboard({ onNavigateToPipeline }: Monthly
     };
   }, [ytdData]);
 
-  // パイプライン（Sales Insightから取得）
+  // パイプライン（Sales Insightから取得）- 通期全体
   const pipelineSummary = useMemo(() => calculatePipelineSummary(), []);
   const pipelineWeighted = useMemo(() => getWeightedTotal(), []);
   const pipelineGross = useMemo(() => getGrossTotal(), []);
+
+  // 選択月のパイプライン
+  const monthlyPipelineSummary = useMemo(() =>
+    calculatePipelineSummaryByMonth(selectedMonth), [selectedMonth]);
+  const monthlyPipelineItems = useMemo(() =>
+    getPipelineByMonth(selectedMonth), [selectedMonth]);
+  const monthlyPipelineWeighted = useMemo(() =>
+    monthlyPipelineSummary.reduce((sum, s) => sum + s.weightedAmount, 0), [monthlyPipelineSummary]);
+  const monthlyPipelineGross = useMemo(() =>
+    monthlyPipelineSummary.reduce((sum, s) => sum + s.totalAmount, 0), [monthlyPipelineSummary]);
 
   // 目標起点のKPI計算
   const targetKPIs = useMemo(() => {
@@ -111,8 +127,10 @@ export default function MonthlyFollowDashboard({ onNavigateToPipeline }: Monthly
     return { annualTarget, confirmedYTD, continuingRevenue, newBusinessRequired, currentStack, achievementRate };
   }, [summary, pipelineSummary, pipelineWeighted]);
 
-  // 部署別サマリー
+  // 部署別サマリー（通期/月別）
   const departmentSummaries = useMemo(() => calculateDepartmentSummaries(), []);
+  const monthlyDepartmentSummaries = useMemo(() =>
+    calculateDepartmentSummariesByMonth(selectedMonth), [selectedMonth]);
 
   const isTableView = viewMode === 'table';
 
@@ -319,6 +337,77 @@ export default function MonthlyFollowDashboard({ onNavigateToPipeline }: Monthly
               <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                 ⚠ 全パイプライン込みでも <span className="font-bold">{targetKPIs.newBusinessRequired.toFixed(0)}億円</span> 不足。新規案件の獲得が必要。
               </div>
+            )}
+          </div>
+
+          {/* 当月パイプライン */}
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold text-slate-800">{selectedMonth}月 受注見込み案件</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-400">{monthlyPipelineItems.length}件</span>
+                <span className="text-sm font-bold text-indigo-600">{monthlyPipelineGross.toFixed(1)}億</span>
+                <span className="text-[10px] text-slate-400">（見込み{monthlyPipelineWeighted.toFixed(1)}億）</span>
+              </div>
+            </div>
+
+            {monthlyPipelineItems.length === 0 ? (
+              <div className="text-center py-4 text-sm text-slate-400">
+                {selectedMonth}月に受注予定の案件はありません
+              </div>
+            ) : (
+              <>
+                {/* ステージ別サマリー */}
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {pipelineStages.map(stage => {
+                    const data = monthlyPipelineSummary.find(s => s.stage === stage.id);
+                    return (
+                      <div key={stage.id} className={`p-2 rounded ${stage.bgColor}`}>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-bold ${stage.color}`}>{stage.id}</span>
+                          <span className={`text-xs ${stage.color}`}>{data?.count || 0}件</span>
+                        </div>
+                        <div className={`text-sm font-bold ${stage.color}`}>{(data?.totalAmount || 0).toFixed(1)}億</div>
+                        <div className="text-[10px] text-slate-500">見込{(data?.weightedAmount || 0).toFixed(1)}億</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 案件一覧（コンパクト） */}
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50">
+                    <tr className="text-slate-500">
+                      <th className="py-1.5 px-2 text-left">ステージ</th>
+                      <th className="py-1.5 px-2 text-left">案件名</th>
+                      <th className="py-1.5 px-2 text-right">金額</th>
+                      <th className="py-1.5 px-2 text-left">顧客</th>
+                      <th className="py-1.5 px-2 text-left">担当</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyPipelineItems.slice(0, 8).map(item => {
+                      const stage = pipelineStages.find(s => s.id === item.stage)!;
+                      return (
+                        <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50">
+                          <td className="py-1.5 px-2">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${stage.bgColor} ${stage.color}`}>{item.stage}</span>
+                          </td>
+                          <td className="py-1.5 px-2 font-medium text-slate-800">{item.name}</td>
+                          <td className="py-1.5 px-2 text-right font-bold">{item.amount.toFixed(1)}億</td>
+                          <td className="py-1.5 px-2 text-slate-500">{item.customer}</td>
+                          <td className="py-1.5 px-2 text-slate-500">{item.owner}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {monthlyPipelineItems.length > 8 && (
+                  <div className="text-center text-xs text-slate-400 mt-2">
+                    他 {monthlyPipelineItems.length - 8} 件
+                  </div>
+                )}
+              </>
             )}
           </div>
 

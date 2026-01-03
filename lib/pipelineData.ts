@@ -151,3 +151,54 @@ export function calculateDepartmentSummaries(): DepartmentSummary[] {
     };
   });
 }
+
+// 月別パイプラインサマリー計算
+export function calculatePipelineSummaryByMonth(month: number): PipelineSummary[] {
+  const monthlyData = pipelineData.filter(p => p.expectedCloseMonth === month);
+  return pipelineStages.map(stage => {
+    const items = monthlyData.filter(p => p.stage === stage.id);
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+    return {
+      stage: stage.id,
+      count: items.length,
+      totalAmount,
+      weightedAmount: totalAmount * (stage.probability / 100),
+    };
+  });
+}
+
+// 月別・部署別サマリー計算
+export function calculateDepartmentSummariesByMonth(month: number): DepartmentSummary[] {
+  return departments.map(dept => {
+    const deptPipeline = pipelineData.filter(p => p.departmentId === dept.id && p.expectedCloseMonth === month);
+
+    const stageBreakdown = pipelineStages.map(stage => {
+      const stageItems = deptPipeline.filter(p => p.stage === stage.id);
+      const amount = stageItems.reduce((sum, p) => sum + p.amount, 0);
+      const weighted = amount * (stage.probability / 100);
+      return { stage: stage.id, amount, weighted };
+    });
+
+    const pipelineGross = stageBreakdown.reduce((sum, s) => sum + s.amount, 0);
+    const pipelineWeighted = stageBreakdown.reduce((sum, s) => sum + s.weighted, 0);
+    // 月別では確定は考慮しない（月別はその月の案件のみ）
+    const currentStack = pipelineWeighted;
+    const gap = 0; // 月別では差分計算は意味が薄い
+    const achievementRate = 0;
+
+    return {
+      department: dept,
+      pipelineGross,
+      pipelineWeighted,
+      currentStack,
+      gap,
+      achievementRate,
+      stageBreakdown,
+    };
+  });
+}
+
+// 月別案件リスト取得
+export function getPipelineByMonth(month: number): PipelineItem[] {
+  return pipelineData.filter(p => p.expectedCloseMonth === month);
+}

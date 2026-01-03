@@ -21,10 +21,14 @@ interface PipelineManagementProps {
   onClearFilter?: () => void;
 }
 
+// 月リスト（4月〜3月）
+const months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+
 export default function PipelineManagement({ initialFilter, onClearFilter }: PipelineManagementProps) {
   const [filterStage, setFilterStage] = useState<PipelineStage | 'all'>('all');
   const [filterOwner, setFilterOwner] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<number | 'all'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('amount');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -45,11 +49,12 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
     setFilterStage('all');
     setFilterOwner('all');
     setFilterDepartment('all');
+    setFilterMonth('all');
     onClearFilter?.();
   };
 
   // フィルターが適用されているか
-  const hasActiveFilter = filterStage !== 'all' || filterOwner !== 'all' || filterDepartment !== 'all';
+  const hasActiveFilter = filterStage !== 'all' || filterOwner !== 'all' || filterDepartment !== 'all' || filterMonth !== 'all';
 
   // 担当者リスト
   const owners = useMemo(() => {
@@ -69,6 +74,9 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
     }
     if (filterOwner !== 'all') {
       data = data.filter(p => p.owner === filterOwner);
+    }
+    if (filterMonth !== 'all') {
+      data = data.filter(p => p.expectedCloseMonth === filterMonth);
     }
 
     data.sort((a, b) => {
@@ -94,7 +102,7 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
     });
 
     return data;
-  }, [filterDepartment, filterStage, filterOwner, sortKey, sortOrder]);
+  }, [filterDepartment, filterStage, filterOwner, filterMonth, sortKey, sortOrder]);
 
   // 集計
   const summary = useMemo(() => {
@@ -136,6 +144,11 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
             {filterStage !== 'all' && (
               <span className={`px-2 py-0.5 ${pipelineStages.find(s => s.id === filterStage)?.bgColor} ${pipelineStages.find(s => s.id === filterStage)?.color} text-xs font-bold rounded`}>
                 {filterStage}案件
+              </span>
+            )}
+            {filterMonth !== 'all' && (
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
+                {filterMonth}月
               </span>
             )}
           </div>
@@ -184,6 +197,19 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
             <option value="all">すべて</option>
             {owners.map(o => (
               <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">受注月:</span>
+          <select
+            value={filterMonth === 'all' ? 'all' : filterMonth.toString()}
+            onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            className="text-sm border border-slate-200 rounded px-2 py-1"
+          >
+            <option value="all">すべて</option>
+            {months.map(m => (
+              <option key={m} value={m}>{m}月</option>
             ))}
           </select>
         </div>
