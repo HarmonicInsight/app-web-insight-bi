@@ -8,6 +8,7 @@ import {
   PipelineItem,
   PipelineStage,
   departments,
+  subTeams,
   getMonthlyPipelineData,
   pipelineEventTypes,
   getItemMonthlyTotal,
@@ -429,29 +430,71 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
         </div>
       )}
 
-      {/* ステージ別サマリー */}
-      <div className="grid grid-cols-4 gap-3">
-        {pipelineStages.map(stage => {
-          const items = baseData.filter(p => p.stage === stage.id);
-          const total = items.reduce((sum, p) => sum + p.amount, 0);
-          const weighted = total * (stage.probability / 100);
-          return (
-            <div
-              key={stage.id}
-              onClick={() => setFilterStage(filterStage === stage.id ? 'all' : stage.id)}
-              className={`${stage.bgColor} rounded-lg p-3 cursor-pointer transition-all ${
-                filterStage === stage.id ? 'ring-2 ring-indigo-500' : 'hover:opacity-80'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`text-lg font-bold ${stage.color}`}>{stage.id}</span>
-                <span className="text-xs text-slate-500">{stage.probability}%</span>
+      {/* ステージ別サマリー（確度別集計） */}
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-slate-800">確度別サマリー</h2>
+          <div className="text-xs text-slate-500">
+            クリックでフィルター
+          </div>
+        </div>
+        <div className="grid grid-cols-5 gap-3">
+          {pipelineStages.map(stage => {
+            const items = baseData.filter(p => p.stage === stage.id);
+            const total = items.reduce((sum, p) => sum + p.amount, 0);
+            const weighted = total * (stage.probability / 100);
+            const avgMargin = items.length > 0
+              ? items.reduce((sum, p) => sum + (p.grossMarginRate || 0), 0) / items.length
+              : 0;
+            return (
+              <div
+                key={stage.id}
+                onClick={() => setFilterStage(filterStage === stage.id ? 'all' : stage.id)}
+                className={`${stage.bgColor} rounded-lg p-3 cursor-pointer transition-all ${
+                  filterStage === stage.id ? 'ring-2 ring-indigo-500' : 'hover:opacity-80'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1">
+                    <span className={`text-lg font-bold ${stage.color}`}>{stage.id}</span>
+                    <span className="text-[10px] text-slate-500">{stage.probability}%</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">{items.length}件</span>
+                </div>
+                <div className={`text-xl font-bold ${stage.color}`}>{total.toFixed(1)}<span className="text-xs">億</span></div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] text-slate-500">見込: {weighted.toFixed(1)}億</span>
+                  {avgMargin > 0 && (
+                    <span className="text-[10px] text-slate-400">粗利: {(avgMargin * 100).toFixed(0)}%</span>
+                  )}
+                </div>
+                <div className="text-[9px] text-slate-400 mt-1">{stage.description}</div>
               </div>
-              <div className={`text-2xl font-bold ${stage.color}`}>{total.toFixed(0)}<span className="text-sm">億</span></div>
-              <div className="text-xs text-slate-500">{items.length}件 → {weighted.toFixed(1)}億見込</div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        {/* 合計行 */}
+        <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between text-sm">
+          <div className="flex items-center gap-6">
+            <span className="text-slate-600">
+              合計: <span className="font-bold text-slate-800">{baseData.length}</span>件
+            </span>
+            <span className="text-slate-600">
+              総額: <span className="font-bold text-slate-800">{baseData.reduce((s, p) => s + p.amount, 0).toFixed(1)}</span>億
+            </span>
+            <span className="text-slate-600">
+              見込: <span className="font-bold text-indigo-600">{
+                baseData.reduce((s, p) => {
+                  const stg = pipelineStages.find(st => st.id === p.stage);
+                  return s + p.amount * ((stg?.probability || 0) / 100);
+                }, 0).toFixed(1)
+              }</span>億
+            </span>
+          </div>
+          <div className="text-xs text-slate-400">
+            平均粗利率: {(baseData.filter(p => p.grossMarginRate).reduce((s, p) => s + (p.grossMarginRate || 0), 0) / Math.max(baseData.filter(p => p.grossMarginRate).length, 1) * 100).toFixed(1)}%
+          </div>
+        </div>
       </div>
 
       {/* 案件テーブル */}
@@ -610,9 +653,35 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
                           </div>
                           {/* 詳細情報 */}
                           <div className="text-xs text-slate-500 space-y-1">
-                            <div>部署: {departments.find(d => d.id === item.departmentId)?.name || '-'}</div>
-                            <div>顧客: {item.customer}</div>
-                            <div>担当: {item.owner}</div>
+                            <div className="flex items-center gap-2">
+                              <span>部署: {departments.find(d => d.id === item.departmentId)?.name || '-'}</span>
+                              {item.subTeamId && (
+                                <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
+                                  {subTeams.find(t => t.id === item.subTeamId)?.name || item.subTeamId}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span>顧客: {item.customer}</span>
+                              {item.projectType && (
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                  item.projectType === 'new' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {item.projectType === 'new' ? '新規' : '継続'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span>担当: {item.members?.join(', ') || item.owner}</span>
+                              {item.grossMarginRate && (
+                                <span className="text-emerald-600">粗利率: {(item.grossMarginRate * 100).toFixed(0)}%</span>
+                              )}
+                            </div>
+                            {item.comment && (
+                              <div className="mt-1 p-1.5 bg-amber-50 rounded text-amber-700 text-[10px]">
+                                💬 {item.comment}
+                              </div>
+                            )}
                           </div>
                           {/* イベント追加ボタン */}
                           <div>
