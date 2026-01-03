@@ -8,7 +8,9 @@ import {
   PipelineItem,
   PipelineStage,
   departments,
+  getMonthlyPipelineData,
 } from '@/lib/pipelineData';
+import { monthlyDataset } from '@/lib/monthlyData';
 
 type SortKey = 'amount' | 'stage' | 'expectedCloseMonth' | 'customer' | 'owner';
 type SortOrder = 'asc' | 'desc';
@@ -56,15 +58,40 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
   // フィルターが適用されているか
   const hasActiveFilter = filterStage !== 'all' || filterOwner !== 'all' || filterDepartment !== 'all' || filterMonth !== 'all';
 
+  // 月選択時のデータソース（月別パイプラインデータまたは全体データ）
+  const baseData = useMemo(() => {
+    if (filterMonth !== 'all') {
+      return getMonthlyPipelineData(filterMonth);
+    }
+    return pipelineData;
+  }, [filterMonth]);
+
+  // 選択月の売上データ
+  const monthlyRevenue = useMemo(() => {
+    if (filterMonth === 'all') return null;
+    const monthData = monthlyDataset.find(d => d.month === filterMonth);
+    if (!monthData) return null;
+    const revenue = monthData.kpis.revenue;
+    return {
+      month: filterMonth,
+      label: monthData.label,
+      isClosed: monthData.isClosed,
+      budget: revenue?.budget || 0,
+      actual: revenue?.actual ?? null,
+      variance: revenue?.variance ?? null,
+      varianceRate: revenue?.varianceRate ?? null,
+    };
+  }, [filterMonth]);
+
   // 担当者リスト
   const owners = useMemo(() => {
-    const ownerSet = new Set(pipelineData.map(p => p.owner));
+    const ownerSet = new Set(baseData.map(p => p.owner));
     return Array.from(ownerSet).sort();
-  }, []);
+  }, [baseData]);
 
   // フィルター＆ソート済みデータ
   const filteredData = useMemo(() => {
-    let data = [...pipelineData];
+    let data = [...baseData];
 
     if (filterDepartment !== 'all') {
       data = data.filter(p => p.departmentId === filterDepartment);
@@ -75,9 +102,7 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
     if (filterOwner !== 'all') {
       data = data.filter(p => p.owner === filterOwner);
     }
-    if (filterMonth !== 'all') {
-      data = data.filter(p => p.expectedCloseMonth === filterMonth);
-    }
+    // filterMonth は baseData で既に適用済み
 
     data.sort((a, b) => {
       let cmp = 0;
@@ -102,7 +127,7 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
     });
 
     return data;
-  }, [filterDepartment, filterStage, filterOwner, filterMonth, sortKey, sortOrder]);
+  }, [baseData, filterDepartment, filterStage, filterOwner, sortKey, sortOrder]);
 
   // 集計
   const summary = useMemo(() => {
@@ -229,10 +254,59 @@ export default function PipelineManagement({ initialFilter, onClearFilter }: Pip
         </div>
       </div>
 
+      {/* 月別売上情報（月が選択されている場合） */}
+      {monthlyRevenue && (
+        <div className={`rounded-lg border p-4 ${
+          monthlyRevenue.isClosed
+            ? 'bg-white border-slate-200'
+            : 'bg-slate-50 border-slate-200 border-dashed'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-lg font-bold text-slate-800">{monthlyRevenue.label}売上</div>
+              <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                monthlyRevenue.isClosed ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+              }`}>
+                {monthlyRevenue.isClosed ? '確定' : '未確定'}
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <div className="text-xs text-slate-500">予算</div>
+                <div className="text-lg font-bold text-slate-700">{monthlyRevenue.budget.toFixed(1)}<span className="text-xs text-slate-400 ml-0.5">億</span></div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-slate-500">実績</div>
+                <div className={`text-lg font-bold ${monthlyRevenue.isClosed ? 'text-indigo-600' : 'text-slate-300'}`}>
+                  {monthlyRevenue.actual !== null ? `${monthlyRevenue.actual.toFixed(1)}` : '-'}<span className="text-xs text-slate-400 ml-0.5">億</span>
+                </div>
+              </div>
+              {monthlyRevenue.isClosed && monthlyRevenue.variance !== null && (
+                <div className="text-center">
+                  <div className="text-xs text-slate-500">差異</div>
+                  <div className={`text-lg font-bold ${
+                    monthlyRevenue.variance >= 0 ? 'text-emerald-600' : 'text-red-600'
+                  }`}>
+                    {monthlyRevenue.variance >= 0 ? '+' : ''}{monthlyRevenue.variance.toFixed(1)}<span className="text-xs text-slate-400 ml-0.5">億</span>
+                  </div>
+                </div>
+              )}
+              <div className="text-center border-l border-slate-200 pl-6">
+                <div className="text-xs text-slate-500">パイプライン</div>
+                <div className="text-lg font-bold text-slate-800">
+                  {summary.total.toFixed(1)}<span className="text-xs text-slate-400 ml-0.5">億</span>
+                </div>
+                <div className="text-xs text-slate-400">{summary.count}件</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ステージ別サマリー */}
       <div className="grid grid-cols-4 gap-3">
         {pipelineStages.map(stage => {
-          const items = pipelineData.filter(p => p.stage === stage.id);
+          const items = baseData.filter(p => p.stage === stage.id);
           const total = items.reduce((sum, p) => sum + p.amount, 0);
           const weighted = total * (stage.probability / 100);
           return (
