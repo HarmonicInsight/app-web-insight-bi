@@ -5,6 +5,33 @@ export const pipelineAsOf = '2025-09-15 18:00';
 
 export type PipelineStage = 'A' | 'B' | 'C' | 'D';
 
+// イベントタイプ
+export type PipelineEventType = 'initial_contact' | 'proposal' | 'negotiation' | 'contract' | 'delivery' | 'other';
+
+export interface PipelineEventConfig {
+  id: PipelineEventType;
+  name: string;
+  color: string;
+  bgColor: string;
+}
+
+export const pipelineEventTypes: PipelineEventConfig[] = [
+  { id: 'initial_contact', name: '初回接触', color: 'text-slate-600', bgColor: 'bg-slate-100' },
+  { id: 'proposal', name: '提案', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+  { id: 'negotiation', name: '交渉', color: 'text-amber-600', bgColor: 'bg-amber-100' },
+  { id: 'contract', name: '契約', color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
+  { id: 'delivery', name: '納品', color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
+  { id: 'other', name: 'その他', color: 'text-gray-500', bgColor: 'bg-gray-100' },
+];
+
+// パイプラインイベント
+export interface PipelineEvent {
+  id: string;
+  type: PipelineEventType;
+  date: string; // YYYY-MM-DD
+  note?: string;
+}
+
 // 部署定義
 export interface Department {
   id: string;
@@ -37,6 +64,9 @@ export interface PipelineItem {
   customer: string;
   owner: string;
   departmentId: string; // 部署ID
+  events?: PipelineEvent[]; // イベント履歴
+  nextAction?: string; // 次のアクション
+  nextActionDate?: string; // 次のアクション日
 }
 
 export interface PipelineSummary {
@@ -57,20 +87,50 @@ export const pipelineStages: PipelineStageConfig[] = [
 // サンプルパイプラインデータ（実際はSales Insightから取得）
 export const pipelineData: PipelineItem[] = [
   // A案件（80%）
-  { id: 'A001', name: '○○ビル新築工事', amount: 8.5, stage: 'A', expectedCloseMonth: 10, customer: '○○不動産', owner: '田中', departmentId: 'sales1' },
-  { id: 'A002', name: '△△マンション改修', amount: 4.2, stage: 'A', expectedCloseMonth: 11, customer: '△△管理組合', owner: '佐藤', departmentId: 'sales1' },
-  { id: 'A003', name: '□□工場増設', amount: 6.8, stage: 'A', expectedCloseMonth: 12, customer: '□□製作所', owner: '鈴木', departmentId: 'sales2' },
-  { id: 'A004', name: '◇◇病院リニューアル', amount: 3.5, stage: 'A', expectedCloseMonth: 1, customer: '◇◇医療法人', owner: '高橋', departmentId: 'sales3' },
+  { id: 'A001', name: '○○ビル新築工事', amount: 8.5, stage: 'A', expectedCloseMonth: 10, customer: '○○不動産', owner: '田中', departmentId: 'sales1',
+    events: [
+      { id: 'e1', type: 'initial_contact', date: '2025-04-10', note: '紹介で初回訪問' },
+      { id: 'e2', type: 'proposal', date: '2025-05-20', note: '概算見積提出' },
+      { id: 'e3', type: 'negotiation', date: '2025-08-15', note: '最終交渉中' },
+    ],
+    nextAction: '契約書確認', nextActionDate: '2025-10-05' },
+  { id: 'A002', name: '△△マンション改修', amount: 4.2, stage: 'A', expectedCloseMonth: 11, customer: '△△管理組合', owner: '佐藤', departmentId: 'sales1',
+    events: [
+      { id: 'e1', type: 'initial_contact', date: '2025-03-15' },
+      { id: 'e2', type: 'proposal', date: '2025-06-01' },
+    ],
+    nextAction: '理事会承認待ち', nextActionDate: '2025-10-20' },
+  { id: 'A003', name: '□□工場増設', amount: 6.8, stage: 'A', expectedCloseMonth: 12, customer: '□□製作所', owner: '鈴木', departmentId: 'sales2',
+    events: [
+      { id: 'e1', type: 'proposal', date: '2025-07-10' },
+      { id: 'e2', type: 'negotiation', date: '2025-09-01' },
+    ] },
+  { id: 'A004', name: '◇◇病院リニューアル', amount: 3.5, stage: 'A', expectedCloseMonth: 1, customer: '◇◇医療法人', owner: '高橋', departmentId: 'sales3',
+    events: [
+      { id: 'e1', type: 'proposal', date: '2025-08-20' },
+    ] },
 
   // B案件（50%）
-  { id: 'B001', name: '××商業施設', amount: 12.0, stage: 'B', expectedCloseMonth: 11, customer: '××リテール', owner: '伊藤', departmentId: 'sales1' },
-  { id: 'B002', name: '▽▽オフィスビル', amount: 7.5, stage: 'B', expectedCloseMonth: 12, customer: '▽▽商事', owner: '渡辺', departmentId: 'sales2' },
+  { id: 'B001', name: '××商業施設', amount: 12.0, stage: 'B', expectedCloseMonth: 11, customer: '××リテール', owner: '伊藤', departmentId: 'sales1',
+    events: [
+      { id: 'e1', type: 'initial_contact', date: '2025-05-01' },
+      { id: 'e2', type: 'proposal', date: '2025-08-10' },
+    ],
+    nextAction: '詳細見積提出', nextActionDate: '2025-10-10' },
+  { id: 'B002', name: '▽▽オフィスビル', amount: 7.5, stage: 'B', expectedCloseMonth: 12, customer: '▽▽商事', owner: '渡辺', departmentId: 'sales2',
+    events: [
+      { id: 'e1', type: 'proposal', date: '2025-07-15' },
+    ] },
   { id: 'B003', name: '◎◎物流センター', amount: 9.0, stage: 'B', expectedCloseMonth: 1, customer: '◎◎物流', owner: '山本', departmentId: 'sales2' },
   { id: 'B004', name: '☆☆学校体育館', amount: 4.5, stage: 'B', expectedCloseMonth: 2, customer: '☆☆市教育委員会', owner: '中村', departmentId: 'sales3' },
   { id: 'B005', name: '◆◆ホテル改装', amount: 5.8, stage: 'B', expectedCloseMonth: 3, customer: '◆◆観光', owner: '小林', departmentId: 'sales3' },
 
   // C案件（20%）
-  { id: 'C001', name: '●●タワー新築', amount: 25.0, stage: 'C', expectedCloseMonth: 2, customer: '●●開発', owner: '加藤', departmentId: 'sales1' },
+  { id: 'C001', name: '●●タワー新築', amount: 25.0, stage: 'C', expectedCloseMonth: 2, customer: '●●開発', owner: '加藤', departmentId: 'sales1',
+    events: [
+      { id: 'e1', type: 'initial_contact', date: '2025-06-01' },
+    ],
+    nextAction: '提案書作成', nextActionDate: '2025-10-15' },
   { id: 'C002', name: '■■工場移転', amount: 15.0, stage: 'C', expectedCloseMonth: 3, customer: '■■工業', owner: '吉田', departmentId: 'sales2' },
   { id: 'C003', name: '▲▲研究施設', amount: 8.5, stage: 'C', expectedCloseMonth: 3, customer: '▲▲製薬', owner: '山田', departmentId: 'sales2' },
   { id: 'C004', name: '★★データセンター', amount: 18.0, stage: 'C', expectedCloseMonth: 3, customer: '★★IT', owner: '佐々木', departmentId: 'sales3' },
