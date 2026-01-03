@@ -6,6 +6,7 @@ import Dashboard from '@/components/Dashboard';
 import DIDashboard from '@/components/DIDashboard';
 import ActionTracker from '@/components/ActionTracker';
 import SettingsModal from '@/components/SettingsModal';
+import DataImportModal from '@/components/DataImportModal';
 import BusinessTreeDashboard from '@/components/BusinessTreeDashboard';
 import MonthlyFollowDashboard from '@/components/MonthlyFollowDashboard';
 import PipelineManagement from '@/components/PipelineManagement';
@@ -88,7 +89,9 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Session timeout handler
   const handleSessionTimeout = useCallback(async () => {
@@ -114,6 +117,12 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
   const handleNavigateToPipeline = useCallback((filter: PipelineFilter) => {
     setPipelineFilter(filter);
     setActiveMain('pipeline');
+  }, []);
+
+  // Handle import complete - refresh components
+  const handleImportComplete = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+    addAuditLog('data_import', 'データがインポートされました');
   }, []);
 
   // Check authentication on mount (server-side session)
@@ -282,6 +291,16 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               <span className="text-xs text-white/70 hidden sm:inline">
                 {performanceData.summary.fiscalYear}
               </span>
+              {/* データインポート */}
+              <button
+                onClick={() => setIsImportOpen(true)}
+                className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title="データインポート"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </button>
               {/* ヘルプ */}
               <Link
                 href="/help"
@@ -332,10 +351,11 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         {activeMain === 'monthly' && (
-          <MonthlyFollowDashboard onNavigateToPipeline={handleNavigateToPipeline} />
+          <MonthlyFollowDashboard key={refreshKey} onNavigateToPipeline={handleNavigateToPipeline} />
         )}
         {activeMain === 'pipeline' && (
           <PipelineManagement
+            key={`pipeline-${refreshKey}`}
             initialFilter={pipelineFilter}
             onClearFilter={() => setPipelineFilter({})}
           />
@@ -357,6 +377,13 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* データインポートモーダル */}
+      <DataImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImportComplete={handleImportComplete}
       />
     </div>
   );
