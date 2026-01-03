@@ -6,7 +6,7 @@ import Dashboard from '@/components/Dashboard';
 import DIDashboard from '@/components/DIDashboard';
 import ActionTracker from '@/components/ActionTracker';
 import SettingsModal from '@/components/SettingsModal';
-import DataImportModal from '@/components/DataImportModal';
+import DataManagementModal from '@/components/DataManagementModal';
 import BusinessTreeDashboard from '@/components/BusinessTreeDashboard';
 import MonthlyFollowDashboard from '@/components/MonthlyFollowDashboard';
 import PipelineManagement from '@/components/PipelineManagement';
@@ -302,14 +302,14 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               <span className="text-xs text-white/70 hidden sm:inline">
                 {performanceData.summary.fiscalYear}
               </span>
-              {/* データインポート */}
+              {/* データ管理 */}
               <button
                 onClick={() => setIsImportOpen(true)}
                 className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="データインポート"
+                title="データ管理"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16M9 4v16" />
                 </svg>
               </button>
               {/* ヘルプ */}
@@ -393,11 +393,11 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
         onClose={() => setIsSettingsOpen(false)}
       />
 
-      {/* データインポートモーダル */}
-      <DataImportModal
+      {/* データ管理モーダル */}
+      <DataManagementModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
-        onImportComplete={handleImportComplete}
+        onDataChange={handleImportComplete}
       />
     </div>
   );

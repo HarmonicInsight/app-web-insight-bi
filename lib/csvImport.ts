@@ -1,6 +1,7 @@
-// CSVインポートユーティリティ
+// CSVインポート・エクスポートユーティリティ
 
-import { PipelineItem, PipelineStage } from './pipelineData';
+import { PipelineItem, PipelineStage, Department, pipelineData, departments } from './pipelineData';
+import { monthlyDataset, kpiDefinitions } from './monthlyData';
 
 // CSVパース結果
 export interface CSVParseResult<T> {
@@ -245,4 +246,223 @@ export function clearPipelineImport(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(PIPELINE_DATA_KEY);
   }
+}
+
+// =====================================
+// 部署マスタ
+// =====================================
+const DEPARTMENT_DATA_KEY = 'insightbi_department_import';
+
+export interface DepartmentImport {
+  id: string;
+  name: string;
+  target: number;
+  confirmedYTD: number;
+}
+
+export function parseDepartmentCSV(csvText: string): CSVParseResult<DepartmentImport> {
+  const rows = parseCSV(csvText);
+  const data: DepartmentImport[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (rows.length === 0) {
+    return { success: false, data: [], errors: ['CSVが空です'], warnings: [] };
+  }
+
+  const startRow = isNaN(parseFloat(rows[0][2])) ? 1 : 0;
+
+  for (let i = startRow; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.length < 4) {
+      errors.push(`行${i + 1}: 列が不足しています（部署ID,部署名,通期目標,確定売上が必要）`);
+      continue;
+    }
+
+    const id = row[0];
+    const name = row[1];
+    const target = parseFloat(row[2]);
+    const confirmedYTD = parseFloat(row[3]);
+
+    if (!id) {
+      errors.push(`行${i + 1}: 部署IDが空です`);
+      continue;
+    }
+
+    if (!name) {
+      errors.push(`行${i + 1}: 部署名が空です`);
+      continue;
+    }
+
+    if (isNaN(target) || target < 0) {
+      errors.push(`行${i + 1}: 通期目標が不正です`);
+      continue;
+    }
+
+    data.push({
+      id,
+      name,
+      target,
+      confirmedYTD: isNaN(confirmedYTD) ? 0 : confirmedYTD,
+    });
+  }
+
+  return { success: errors.length === 0, data, errors, warnings };
+}
+
+export function saveDepartmentImport(data: DepartmentImport[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(DEPARTMENT_DATA_KEY, JSON.stringify(data));
+  }
+}
+
+export function loadDepartmentImport(): DepartmentImport[] {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(DEPARTMENT_DATA_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export function clearDepartmentImport(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(DEPARTMENT_DATA_KEY);
+  }
+}
+
+export function generateDepartmentTemplate(): string {
+  return `部署ID,部署名,通期目標(億),確定売上(億)
+sales1,営業1部,70,18.5
+sales2,営業2部,65,15.2
+sales3,営業3部,65,12.8`;
+}
+
+// =====================================
+// エクスポート機能
+// =====================================
+
+// CSVダウンロードヘルパー
+export function downloadCSV(content: string, filename: string): void {
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 月次KPIデータをエクスポート
+export function exportMonthlyData(): string {
+  const header = '月,KPI ID,KPI名,実績,予算,差異,差異率(%)';
+  const rows: string[] = [header];
+
+  monthlyDataset.forEach(monthData => {
+    if (!monthData.isClosed) return; // 締め済みのみ
+
+    Object.entries(monthData.kpis).forEach(([kpiId, value]) => {
+      const kpi = kpiDefinitions.find(k => k.id === kpiId);
+      rows.push([
+        monthData.month,
+        kpiId,
+        kpi?.name || kpiId,
+        value.actual ?? '',
+        value.budget,
+        value.variance ?? '',
+        value.varianceRate ?? '',
+      ].join(','));
+    });
+  });
+
+  return rows.join('\n');
+}
+
+// パイプラインデータをエクスポート
+export function exportPipelineData(): string {
+  const header = 'ID,案件名,金額(億),ステージ,受注予定月,顧客名,担当者,部署ID';
+  const rows: string[] = [header];
+
+  // LocalStorageのデータがあればそれを使用、なければデフォルト
+  const data = loadPipelineImport().length > 0 ? loadPipelineImport() : pipelineData;
+
+  data.forEach(item => {
+    rows.push([
+      item.id,
+      `"${item.name.replace(/"/g, '""')}"`,
+      item.amount,
+      item.stage,
+      item.expectedCloseMonth,
+      `"${item.customer.replace(/"/g, '""')}"`,
+      item.owner,
+      item.departmentId,
+    ].join(','));
+  });
+
+  return rows.join('\n');
+}
+
+// 部署マスタをエクスポート
+export function exportDepartmentData(): string {
+  const header = '部署ID,部署名,通期目標(億),確定売上(億)';
+  const rows: string[] = [header];
+
+  // LocalStorageのデータがあればそれを使用、なければデフォルト
+  const data = loadDepartmentImport().length > 0 ? loadDepartmentImport() : departments;
+
+  data.forEach(dept => {
+    rows.push([
+      dept.id,
+      dept.name,
+      dept.target,
+      dept.confirmedYTD,
+    ].join(','));
+  });
+
+  return rows.join('\n');
+}
+
+// 全データエクスポート（ZIP風にまとめる代わりに個別ダウンロード）
+export function exportAllData(): void {
+  const timestamp = new Date().toISOString().slice(0, 10);
+
+  downloadCSV(exportMonthlyData(), `monthly_data_${timestamp}.csv`);
+  setTimeout(() => {
+    downloadCSV(exportPipelineData(), `pipeline_data_${timestamp}.csv`);
+  }, 500);
+  setTimeout(() => {
+    downloadCSV(exportDepartmentData(), `department_data_${timestamp}.csv`);
+  }, 1000);
+}
+
+// データ件数サマリー取得
+export function getDataSummary(): {
+  monthly: { count: number; source: 'default' | 'imported' };
+  pipeline: { count: number; source: 'default' | 'imported' };
+  department: { count: number; source: 'default' | 'imported' };
+} {
+  const monthlyImported = loadMonthlyImport();
+  const pipelineImported = loadPipelineImport();
+  const departmentImported = loadDepartmentImport();
+
+  return {
+    monthly: {
+      count: monthlyImported.length > 0 ? monthlyImported.length : monthlyDataset.filter(d => d.isClosed).length * kpiDefinitions.length,
+      source: monthlyImported.length > 0 ? 'imported' : 'default',
+    },
+    pipeline: {
+      count: pipelineImported.length > 0 ? pipelineImported.length : pipelineData.length,
+      source: pipelineImported.length > 0 ? 'imported' : 'default',
+    },
+    department: {
+      count: departmentImported.length > 0 ? departmentImported.length : departments.length,
+      source: departmentImported.length > 0 ? 'imported' : 'default',
+    },
+  };
+}
+
+// 全インポートデータをクリア
+export function clearAllImportedData(): void {
+  clearMonthlyImport();
+  clearPipelineImport();
+  clearDepartmentImport();
 }
