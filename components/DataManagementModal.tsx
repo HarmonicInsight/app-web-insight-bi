@@ -5,17 +5,22 @@ import {
   parseMonthlyCSV,
   parsePipelineCSV,
   parseDepartmentCSV,
+  parseMonthlyPipelineCSV,
   generateMonthlyTemplate,
   generatePipelineTemplate,
   generateDepartmentTemplate,
+  generateMonthlyPipelineTemplate,
   saveMonthlyImport,
   savePipelineImport,
   saveDepartmentImport,
+  saveMonthlyPipeline,
   exportMonthlyData,
   exportPipelineData,
   exportDepartmentData,
+  exportMonthlyPipelineData,
   downloadCSV,
   getDataSummary,
+  getMonthlyPipelineSummary,
   clearAllImportedData,
   MonthlyKPIImport,
   DepartmentImport,
@@ -30,22 +35,28 @@ interface DataManagementModalProps {
 }
 
 type TabType = 'export' | 'import';
-type DataType = 'monthly' | 'pipeline' | 'department';
+type DataType = 'monthly' | 'pipeline' | 'department' | 'monthlyPipeline';
+
+// 月リスト（4月〜3月）
+const months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
 
 export default function DataManagementModal({ isOpen, onClose, onDataChange }: DataManagementModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('export');
-  const [importType, setImportType] = useState<DataType>('monthly');
+  const [importType, setImportType] = useState<DataType>('monthlyPipeline');
+  const [selectedMonth, setSelectedMonth] = useState<number>(4);
   const [dragActive, setDragActive] = useState(false);
-  const [parseResult, setParseResult] = useState<CSVParseResult<MonthlyKPIImport | PipelineItem | DepartmentImport> | null>(null);
+  const [parseResult, setParseResult] = useState<CSVParseResult<MonthlyKPIImport | PipelineItem | DepartmentImport | Omit<PipelineItem, 'expectedCloseMonth'>> | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [dataSummary, setDataSummary] = useState<ReturnType<typeof getDataSummary> | null>(null);
+  const [monthlyPipelineSummary, setMonthlyPipelineSummary] = useState<ReturnType<typeof getMonthlyPipelineSummary>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // データサマリー更新
   useEffect(() => {
     if (isOpen) {
       setDataSummary(getDataSummary());
+      setMonthlyPipelineSummary(getMonthlyPipelineSummary());
     }
   }, [isOpen]);
 
@@ -67,6 +78,8 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
         setParseResult(parseMonthlyCSV(text));
       } else if (importType === 'pipeline') {
         setParseResult(parsePipelineCSV(text));
+      } else if (importType === 'monthlyPipeline') {
+        setParseResult(parseMonthlyPipelineCSV(text));
       } else {
         setParseResult(parseDepartmentCSV(text));
       }
@@ -98,6 +111,13 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
         saveMonthlyImport(parseResult.data as MonthlyKPIImport[]);
       } else if (importType === 'pipeline') {
         savePipelineImport(parseResult.data as PipelineItem[]);
+      } else if (importType === 'monthlyPipeline') {
+        // 月別パイプラインの保存（expectedCloseMonthを追加）
+        const pipelineItems: PipelineItem[] = (parseResult.data as Omit<PipelineItem, 'expectedCloseMonth'>[]).map(item => ({
+          ...item,
+          expectedCloseMonth: selectedMonth,
+        }));
+        saveMonthlyPipeline(selectedMonth, pipelineItems);
       } else {
         saveDepartmentImport(parseResult.data as DepartmentImport[]);
       }
@@ -105,6 +125,7 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
       setIsProcessing(false);
       setSuccess(true);
       setDataSummary(getDataSummary());
+      setMonthlyPipelineSummary(getMonthlyPipelineSummary());
 
       setTimeout(() => {
         onDataChange?.();
@@ -116,7 +137,7 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
         }
       }, 1500);
     }, 500);
-  }, [parseResult, importType, onDataChange]);
+  }, [parseResult, importType, selectedMonth, onDataChange]);
 
   const handleReset = useCallback(() => {
     setParseResult(null);
@@ -164,7 +185,7 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
     }
   }, [onDataChange]);
 
-  const downloadTemplate = useCallback((type: DataType) => {
+  const downloadTemplate = useCallback((type: DataType, month?: number) => {
     let content = '';
     let filename = '';
 
@@ -174,6 +195,9 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
     } else if (type === 'pipeline') {
       content = generatePipelineTemplate();
       filename = 'pipeline_template.csv';
+    } else if (type === 'monthlyPipeline') {
+      content = generateMonthlyPipelineTemplate();
+      filename = `pipeline_${month || 4}月_template.csv`;
     } else {
       content = generateDepartmentTemplate();
       filename = 'department_template.csv';
@@ -185,8 +209,9 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
   if (!isOpen) return null;
 
   const dataTypeLabels: Record<DataType, { name: string; desc: string }> = {
+    monthlyPipeline: { name: '月別パイプライン', desc: '月ごとの案件一覧' },
     monthly: { name: '月次KPIデータ', desc: '月ごとの実績・予算' },
-    pipeline: { name: 'パイプラインデータ', desc: '案件一覧' },
+    pipeline: { name: 'パイプライン（通期）', desc: '全期間の案件一覧' },
     department: { name: '部署マスタ', desc: '部署・目標設定' },
   };
 
@@ -235,11 +260,36 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
           {/* エクスポート */}
           {activeTab === 'export' && (
             <div className="space-y-4">
-              {/* データサマリー */}
+              {/* 月別パイプラインサマリー */}
               <div className="bg-slate-50 rounded-lg p-4">
-                <h3 className="text-sm font-bold text-slate-800 mb-3">現在のデータ状況</h3>
+                <h3 className="text-sm font-bold text-slate-800 mb-3">月別パイプラインデータ</h3>
+                <div className="grid grid-cols-6 gap-2">
+                  {monthlyPipelineSummary.map(m => (
+                    <div
+                      key={m.month}
+                      className={`bg-white rounded-lg p-2 border text-center cursor-pointer hover:border-indigo-300 transition-colors ${
+                        m.count > 0 ? 'border-indigo-200' : 'border-slate-200'
+                      }`}
+                      onClick={() => m.count > 0 && downloadCSV(exportMonthlyPipelineData(m.month), `pipeline_${m.month}月.csv`)}
+                    >
+                      <div className="text-xs text-slate-500">{m.month}月</div>
+                      <div className={`text-sm font-bold ${m.count > 0 ? 'text-indigo-600' : 'text-slate-300'}`}>
+                        {m.count}件
+                      </div>
+                      {m.count > 0 && (
+                        <div className="text-[10px] text-slate-400">{m.total.toFixed(1)}億</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-2 text-center">クリックでダウンロード</div>
+              </div>
+
+              {/* その他データサマリー */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <h3 className="text-sm font-bold text-slate-800 mb-3">その他のデータ</h3>
                 <div className="grid grid-cols-3 gap-3">
-                  {(['monthly', 'pipeline', 'department'] as DataType[]).map(type => (
+                  {(['monthly', 'pipeline', 'department'] as const).map(type => (
                     <div key={type} className="bg-white rounded-lg p-3 border border-slate-200">
                       <div className="text-xs text-slate-500">{dataTypeLabels[type].name}</div>
                       <div className="flex items-end justify-between mt-1">
@@ -255,43 +305,16 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
                           {dataSummary?.[type].source === 'imported' ? 'インポート済' : 'デフォルト'}
                         </span>
                       </div>
+                      <button
+                        onClick={() => handleExport(type)}
+                        disabled={isProcessing}
+                        className="mt-2 w-full px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded hover:bg-slate-200 transition-colors disabled:opacity-50"
+                      >
+                        エクスポート
+                      </button>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* エクスポートボタン */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-800">個別エクスポート</h3>
-                {(['monthly', 'pipeline', 'department'] as DataType[]).map(type => (
-                  <div key={type} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-3">
-                    <div>
-                      <div className="font-medium text-slate-800">{dataTypeLabels[type].name}</div>
-                      <div className="text-xs text-slate-500">{dataTypeLabels[type].desc}</div>
-                    </div>
-                    <button
-                      onClick={() => handleExport(type)}
-                      disabled={isProcessing}
-                      className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      CSVダウンロード
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* 一括エクスポート */}
-              <div className="pt-4 border-t border-slate-200">
-                <button
-                  onClick={handleExportAll}
-                  disabled={isProcessing}
-                  className="w-full py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                >
-                  全データを一括エクスポート
-                </button>
               </div>
 
               {/* データリセット */}
@@ -314,18 +337,50 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
               {/* データ種別選択 */}
               <div>
                 <label className="text-sm font-medium text-slate-700 block mb-2">インポート種別</label>
+                {/* 月別パイプライン（メイン） */}
+                <div
+                  onClick={() => { setImportType('monthlyPipeline'); handleReset(); }}
+                  className={`mb-3 py-3 px-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    importType === 'monthlyPipeline'
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium text-sm ${importType === 'monthlyPipeline' ? 'text-indigo-700' : 'text-slate-600'}`}>
+                        月別パイプライン
+                      </div>
+                      <div className="text-[10px] mt-0.5 opacity-70">月ごとの案件一覧をインポート</div>
+                    </div>
+                    {importType === 'monthlyPipeline' && (
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => { e.stopPropagation(); setSelectedMonth(parseInt(e.target.value)); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-3 py-1.5 text-sm border border-indigo-300 rounded-lg bg-white text-indigo-700 font-medium"
+                      >
+                        {months.map(m => (
+                          <option key={m} value={m}>{m}月</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+
+                {/* その他のデータ種別 */}
                 <div className="grid grid-cols-3 gap-2">
-                  {(['monthly', 'pipeline', 'department'] as DataType[]).map(type => (
+                  {(['monthly', 'pipeline', 'department'] as const).map(type => (
                     <button
                       key={type}
                       onClick={() => { setImportType(type); handleReset(); }}
-                      className={`py-3 px-4 rounded-lg border-2 transition-all text-left ${
+                      className={`py-2 px-3 rounded-lg border-2 transition-all text-left ${
                         importType === type
                           ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                           : 'border-slate-200 hover:border-slate-300 text-slate-600'
                       }`}
                     >
-                      <div className="font-medium text-sm">{dataTypeLabels[type].name}</div>
+                      <div className="font-medium text-xs">{dataTypeLabels[type].name}</div>
                       <div className="text-[10px] mt-0.5 opacity-70">{dataTypeLabels[type].desc}</div>
                     </button>
                   ))}
@@ -335,10 +390,11 @@ export default function DataManagementModal({ isOpen, onClose, onDataChange }: D
               {/* テンプレートダウンロード */}
               <div className="p-3 bg-slate-50 rounded-lg flex items-center justify-between">
                 <div className="text-sm text-slate-600">
-                  <span className="font-medium">フォーマット確認:</span> テンプレートをダウンロード
+                  <span className="font-medium">フォーマット確認:</span>
+                  {importType === 'monthlyPipeline' && <span className="ml-1 text-indigo-600">{selectedMonth}月用</span>}
                 </div>
                 <button
-                  onClick={() => downloadTemplate(importType)}
+                  onClick={() => downloadTemplate(importType, selectedMonth)}
                   className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

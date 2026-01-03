@@ -208,6 +208,12 @@ P003,□□工場増設,12.0,C,12,□□製作所,鈴木,sales2`;
 // LocalStorageキー
 const MONTHLY_DATA_KEY = 'insightbi_monthly_import';
 const PIPELINE_DATA_KEY = 'insightbi_pipeline_import';
+const MONTHLY_PIPELINE_KEY = 'insightbi_monthly_pipeline'; // 月別パイプライン
+
+// 月別パイプラインデータ型
+export type MonthlyPipelineData = {
+  [month: number]: PipelineItem[];
+};
 
 // インポートデータの保存
 export function saveMonthlyImport(data: MonthlyKPIImport[]): void {
@@ -220,6 +226,58 @@ export function savePipelineImport(data: PipelineItem[]): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem(PIPELINE_DATA_KEY, JSON.stringify(data));
   }
+}
+
+// 月別パイプラインの保存（特定の月）
+export function saveMonthlyPipeline(month: number, data: PipelineItem[]): void {
+  if (typeof window !== 'undefined') {
+    const existing = loadAllMonthlyPipeline();
+    existing[month] = data;
+    localStorage.setItem(MONTHLY_PIPELINE_KEY, JSON.stringify(existing));
+  }
+}
+
+// 月別パイプラインの読み込み（全月）
+export function loadAllMonthlyPipeline(): MonthlyPipelineData {
+  if (typeof window === 'undefined') return {};
+  const stored = localStorage.getItem(MONTHLY_PIPELINE_KEY);
+  return stored ? JSON.parse(stored) : {};
+}
+
+// 月別パイプラインの読み込み（特定の月）
+export function loadMonthlyPipeline(month: number): PipelineItem[] {
+  const all = loadAllMonthlyPipeline();
+  return all[month] || [];
+}
+
+// 月別パイプラインのクリア（特定の月）
+export function clearMonthlyPipeline(month: number): void {
+  if (typeof window !== 'undefined') {
+    const existing = loadAllMonthlyPipeline();
+    delete existing[month];
+    localStorage.setItem(MONTHLY_PIPELINE_KEY, JSON.stringify(existing));
+  }
+}
+
+// 月別パイプラインの全クリア
+export function clearAllMonthlyPipeline(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(MONTHLY_PIPELINE_KEY);
+  }
+}
+
+// 月別パイプラインのサマリー取得
+export function getMonthlyPipelineSummary(): { month: number; count: number; total: number }[] {
+  const data = loadAllMonthlyPipeline();
+  const months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+  return months.map(month => {
+    const items = data[month] || [];
+    return {
+      month,
+      count: items.length,
+      total: items.reduce((sum, item) => sum + item.amount, 0),
+    };
+  });
 }
 
 // インポートデータの読み込み
@@ -465,4 +523,105 @@ export function clearAllImportedData(): void {
   clearMonthlyImport();
   clearPipelineImport();
   clearDepartmentImport();
+  clearAllMonthlyPipeline();
+}
+
+// 月別パイプラインをエクスポート（特定の月）
+export function exportMonthlyPipelineData(month: number): string {
+  const header = 'ID,案件名,金額(億),ステージ,顧客名,担当者,部署ID';
+  const rows: string[] = [header];
+
+  const data = loadMonthlyPipeline(month);
+
+  data.forEach(item => {
+    rows.push([
+      item.id,
+      `"${item.name.replace(/"/g, '""')}"`,
+      item.amount,
+      item.stage,
+      `"${item.customer.replace(/"/g, '""')}"`,
+      item.owner,
+      item.departmentId,
+    ].join(','));
+  });
+
+  return rows.join('\n');
+}
+
+// 月別パイプライン用のCSVパース（月カラムなし）
+export function parseMonthlyPipelineCSV(csvText: string): CSVParseResult<Omit<PipelineItem, 'expectedCloseMonth'>> {
+  const rows = parseCSV(csvText);
+  const data: Omit<PipelineItem, 'expectedCloseMonth'>[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (rows.length === 0) {
+    return { success: false, data: [], errors: ['CSVが空です'], warnings: [] };
+  }
+
+  // ヘッダー行をスキップ
+  const startRow = rows[0][0].toLowerCase().includes('id') || rows[0][0] === 'ID' ? 1 : 0;
+
+  const validStages: PipelineStage[] = ['A', 'B', 'C', 'D'];
+
+  for (let i = startRow; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.length < 7) {
+      errors.push(`行${i + 1}: 列が不足しています（ID,案件名,金額,ステージ,顧客,担当,部署が必要）`);
+      continue;
+    }
+
+    const id = row[0];
+    const name = row[1];
+    const amount = parseFloat(row[2]);
+    const stage = row[3].toUpperCase() as PipelineStage;
+    const customer = row[4];
+    const owner = row[5];
+    const departmentId = row[6];
+
+    if (!id) {
+      errors.push(`行${i + 1}: IDが空です`);
+      continue;
+    }
+
+    if (!name) {
+      errors.push(`行${i + 1}: 案件名が空です`);
+      continue;
+    }
+
+    if (isNaN(amount) || amount < 0) {
+      errors.push(`行${i + 1}: 金額が不正です`);
+      continue;
+    }
+
+    if (!validStages.includes(stage)) {
+      errors.push(`行${i + 1}: ステージが不正です（A/B/C/Dのいずれか）`);
+      continue;
+    }
+
+    data.push({
+      id,
+      name,
+      amount,
+      stage,
+      customer: customer || '',
+      owner: owner || '',
+      departmentId: departmentId || 'sales1',
+    });
+  }
+
+  return {
+    success: errors.length === 0,
+    data,
+    errors,
+    warnings,
+  };
+}
+
+// 月別パイプラインテンプレート生成
+export function generateMonthlyPipelineTemplate(): string {
+  return `ID,案件名,金額(億),ステージ,顧客名,担当者,部署ID
+P001,○○ビル新築工事,8.5,A,○○不動産,田中,sales1
+P002,△△マンション改修,4.2,B,△△管理組合,佐藤,sales1
+P003,□□工場増設,12.0,C,□□製作所,鈴木,sales2`;
 }

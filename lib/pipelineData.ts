@@ -156,9 +156,40 @@ export function calculateDepartmentSummaries(): DepartmentSummary[] {
   });
 }
 
+// 月別パイプラインデータ取得（インポートデータを優先）
+export function getMonthlyPipelineData(month: number): PipelineItem[] {
+  // クライアントサイドでのみLocalStorageにアクセス
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('insightbi_monthly_pipeline');
+    if (stored) {
+      const allMonthly = JSON.parse(stored);
+      if (allMonthly[month] && allMonthly[month].length > 0) {
+        // インポートされたデータにexpectedCloseMonthを付与
+        return allMonthly[month].map((item: PipelineItem) => ({
+          ...item,
+          expectedCloseMonth: month,
+        }));
+      }
+    }
+  }
+  // フォールバック: デフォルトデータから該当月をフィルター
+  return pipelineData.filter(p => p.expectedCloseMonth === month);
+}
+
+// 月別にインポート済みかどうかを確認
+export function hasMonthlyPipelineData(month: number): boolean {
+  if (typeof window === 'undefined') return false;
+  const stored = localStorage.getItem('insightbi_monthly_pipeline');
+  if (stored) {
+    const allMonthly = JSON.parse(stored);
+    return allMonthly[month] && allMonthly[month].length > 0;
+  }
+  return false;
+}
+
 // 月別パイプラインサマリー計算
 export function calculatePipelineSummaryByMonth(month: number): PipelineSummary[] {
-  const monthlyData = pipelineData.filter(p => p.expectedCloseMonth === month);
+  const monthlyData = getMonthlyPipelineData(month);
   return pipelineStages.map(stage => {
     const items = monthlyData.filter(p => p.stage === stage.id);
     const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
@@ -173,8 +204,10 @@ export function calculatePipelineSummaryByMonth(month: number): PipelineSummary[
 
 // 月別・部署別サマリー計算
 export function calculateDepartmentSummariesByMonth(month: number): DepartmentSummary[] {
+  const monthlyData = getMonthlyPipelineData(month);
+
   return departments.map(dept => {
-    const deptPipeline = pipelineData.filter(p => p.departmentId === dept.id && p.expectedCloseMonth === month);
+    const deptPipeline = monthlyData.filter(p => p.departmentId === dept.id);
 
     const stageBreakdown = pipelineStages.map(stage => {
       const stageItems = deptPipeline.filter(p => p.stage === stage.id);
@@ -206,5 +239,5 @@ export function calculateDepartmentSummariesByMonth(month: number): DepartmentSu
 
 // 月別案件リスト取得
 export function getPipelineByMonth(month: number): PipelineItem[] {
-  return pipelineData.filter(p => p.expectedCloseMonth === month);
+  return getMonthlyPipelineData(month);
 }
