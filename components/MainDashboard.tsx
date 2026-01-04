@@ -16,44 +16,30 @@ import { DashboardData } from '@/lib/processData';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
 import { addAuditLog } from '@/lib/exportUtils';
 import { PipelineStage } from '@/lib/pipelineData';
+import { LocaleProvider, useLocale, LanguageToggle } from '@/lib/i18n';
 
 interface MainDashboardProps {
   performanceData: PerformanceData;
   diData: DashboardData;
 }
 
-const mainTabs = [
-  {
-    id: 'monthly',
-    label: '月次管理',
-    description: 'KPI予実・アクション',
-    icon: (
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'pipeline',
-    label: 'パイプライン',
-    description: '案件・計画管理',
-    icon: (
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-      </svg>
-    ),
-  },
-  {
-    id: 'analytics',
-    label: '分析',
-    description: 'グラフ・詳細分析',
-    icon: (
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-  },
-];
+const tabIcons = {
+  monthly: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  pipeline: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+    </svg>
+  ),
+  analytics: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+};
 
 interface PipelineFilter {
   departmentId?: string;
@@ -61,6 +47,15 @@ interface PipelineFilter {
 }
 
 export default function MainDashboard({ performanceData, diData }: MainDashboardProps) {
+  return (
+    <LocaleProvider>
+      <MainDashboardContent performanceData={performanceData} diData={diData} />
+    </LocaleProvider>
+  );
+}
+
+function MainDashboardContent({ performanceData, diData }: MainDashboardProps) {
+  const { t } = useLocale();
   const [activeMain, setActiveMain] = useState<'monthly' | 'pipeline' | 'analytics'>('monthly');
   const [analyticsSubTab, setAnalyticsSubTab] = useState<'charts' | 'company' | 'kpi'>('charts');
   const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>({});
@@ -172,7 +167,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-slate-500">読み込み中...</div>
+        <div className="text-slate-500">{t.common.loading}</div>
       </div>
     );
   }
@@ -188,29 +183,29 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">InsightBI</h1>
-            <p className="text-slate-500 mt-2">経営ダッシュボード</p>
+            <h1 className="text-2xl font-bold text-slate-800">{t.login.title}</h1>
+            <p className="text-slate-500 mt-2">{t.login.subtitle}</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">ユーザー名</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t.login.username}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="ユーザー名を入力"
+                placeholder={t.login.usernamePlaceholder}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">パスワード</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t.login.password}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="パスワードを入力"
+                placeholder={t.login.passwordPlaceholder}
               />
             </div>
 
@@ -225,7 +220,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'ログイン中...' : 'ログイン'}
+              {isSubmitting ? t.login.submitting : t.login.submit}
             </button>
           </form>
 
@@ -251,21 +246,21 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <span className="font-bold text-sm">InsightBI 経営ダッシュボード</span>
+              <span className="font-bold text-sm">{t.dashboard.title}</span>
             </div>
             <div className="flex gap-1">
-              {mainTabs.map((tab) => (
+              {(['monthly', 'pipeline', 'analytics'] as const).map((tabId) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveMain(tab.id as 'monthly' | 'pipeline' | 'analytics')}
+                  key={tabId}
+                  onClick={() => setActiveMain(tabId)}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                    activeMain === tab.id
+                    activeMain === tabId
                       ? 'bg-white/20 text-white'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {tab.icon}
-                  <span className="hidden md:inline">{tab.label}</span>
+                  {tabIcons[tabId]}
+                  <span className="hidden md:inline">{t.nav[tabId]}</span>
                 </button>
               ))}
             </div>
@@ -273,59 +268,60 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
               <span className="text-xs text-white/70 hidden sm:inline">
                 {performanceData.summary.fiscalYear}
               </span>
-              {/* データ管理 */}
+              {/* Language Toggle */}
+              <LanguageToggle className="text-white/70 hover:text-white hover:bg-white/10" />
+              {/* Data Management */}
               <button
                 onClick={() => setIsImportOpen(true)}
                 className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="データ管理"
+                title={t.dashboard.dataManagement}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16M9 4v16" />
                 </svg>
               </button>
-              {/* ヘルプ */}
+              {/* Help */}
               <Link
                 href="/help"
                 className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="ヘルプ"
+                title={t.common.help}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </Link>
-              {/* 設定 */}
+              {/* Settings */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="設定"
+                title={t.common.settings}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
-              {/* ログアウト */}
+              {/* Logout */}
               <button
                 onClick={handleLogout}
                 className="text-xs text-white/70 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
               >
-                ログアウト
+                {t.common.logout}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* セッションタイムアウト警告 */}
+      {/* Session Timeout Warning */}
       {showTimeoutWarning && (
         <div className="bg-amber-500 text-white px-4 py-2 text-center text-sm">
-          <span className="font-medium">セッションがまもなく期限切れになります。</span>
-          <span className="ml-2">操作を続けるか、再度ログインしてください。</span>
+          <span className="font-medium">{t.dashboard.sessionTimeoutMessage}</span>
           <button
             onClick={() => setShowTimeoutWarning(false)}
             className="ml-4 px-2 py-0.5 bg-white/20 rounded hover:bg-white/30 transition-colors"
           >
-            閉じる
+            {t.common.close}
           </button>
         </div>
       )}
@@ -344,7 +340,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
         )}
         {activeMain === 'analytics' && (
           <div className="h-full flex flex-col">
-            {/* 分析サブタブ */}
+            {/* Analytics Sub-tabs */}
             <div className="bg-white border-b border-slate-200 px-4 py-2 flex-shrink-0">
               <div className="flex gap-1">
                 <button
@@ -355,7 +351,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  グラフ集
+                  {t.nav.charts}
                 </button>
                 <button
                   onClick={() => setAnalyticsSubTab('company')}
@@ -365,7 +361,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  全社業績
+                  {t.nav.company}
                 </button>
                 <button
                   onClick={() => setAnalyticsSubTab('kpi')}
@@ -375,7 +371,7 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  KPIツリー
+                  {t.nav.kpiTree}
                 </button>
               </div>
             </div>
