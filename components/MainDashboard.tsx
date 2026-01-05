@@ -1,94 +1,173 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import Dashboard from '@/components/Dashboard';
 import DIDashboard from '@/components/DIDashboard';
 import ActionTracker from '@/components/ActionTracker';
+import SettingsModal from '@/components/SettingsModal';
+import DataManagementModal from '@/components/DataManagementModal';
+import BusinessTreeDashboard from '@/components/BusinessTreeDashboard';
+import MonthlyFollowDashboard from '@/components/MonthlyFollowDashboard';
+import PipelineManagement from '@/components/PipelineManagement';
+import AnalyticsDashboard from '@/components/AnalyticsDashboard';
 import { PerformanceData } from '@/lib/types';
 import { DashboardData } from '@/lib/processData';
+import { useSessionTimeout } from '@/lib/useSessionTimeout';
+import { addAuditLog } from '@/lib/exportUtils';
+import { PipelineStage } from '@/lib/pipelineData';
+import { LocaleProvider, useLocale, LanguageToggle } from '@/lib/i18n';
 
 interface MainDashboardProps {
   performanceData: PerformanceData;
   diData: DashboardData;
 }
 
-// Demo credentials
-const VALID_USER = 'demo';
-const VALID_PASS = 'insight2025';
+const tabIcons = {
+  monthly: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  pipeline: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+    </svg>
+  ),
+  analytics: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+};
 
-const mainTabs = [
-  {
-    id: 'company',
-    label: '全社ダッシュボード',
-    description: '支社・セグメント別の業績概況',
-    icon: (
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-      </svg>
-    ),
-  },
-  {
-    id: 'di',
-    label: 'プロジェクト分析',
-    description: '案件別の詳細分析',
-    icon: (
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'action',
-    label: 'アクション管理',
-    description: '課題対応・フォローアップ',
-    icon: (
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-      </svg>
-    ),
-  },
-];
+interface PipelineFilter {
+  departmentId?: string;
+  stage?: PipelineStage;
+}
 
 export default function MainDashboard({ performanceData, diData }: MainDashboardProps) {
-  const [activeMain, setActiveMain] = useState<'company' | 'di' | 'action'>('company');
+  return (
+    <LocaleProvider>
+      <MainDashboardContent performanceData={performanceData} diData={diData} />
+    </LocaleProvider>
+  );
+}
+
+function MainDashboardContent({ performanceData, diData }: MainDashboardProps) {
+  const { t } = useLocale();
+  const [activeMain, setActiveMain] = useState<'monthly' | 'pipeline' | 'analytics'>('monthly');
+  const [analyticsSubTab, setAnalyticsSubTab] = useState<'charts' | 'company' | 'kpi'>('charts');
+  const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Check authentication on mount
-  useEffect(() => {
-    const auth = localStorage.getItem('insightbi_auth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
+  // Session timeout handler
+  const handleSessionTimeout = useCallback(async () => {
+    addAuditLog('session_timeout', 'セッションがタイムアウトしました');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Logout on timeout failed:', e);
     }
-    setIsLoading(false);
+    setIsAuthenticated(false);
+    setShowTimeoutWarning(false);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Use session timeout hook (30 minutes default, 5 min warning)
+  useSessionTimeout({
+    timeoutMinutes: 30,
+    onTimeout: handleSessionTimeout,
+    warningMinutes: 5,
+    onWarning: () => setShowTimeoutWarning(true),
+  });
+
+  // Handle navigation to pipeline with filter
+  const handleNavigateToPipeline = useCallback((filter: PipelineFilter) => {
+    setPipelineFilter(filter);
+    setActiveMain('pipeline');
+  }, []);
+
+  // Handle import complete - refresh components
+  const handleImportComplete = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+    addAuditLog('data_import', 'データがインポートされました');
+  }, []);
+
+  // Check authentication on mount (server-side session)
+  const checkSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/session');
+      const data = await res.json();
+      setIsAuthenticated(data.authenticated);
+    } catch (err) {
+      console.error('Session check failed:', err);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === VALID_USER && password === VALID_PASS) {
-      localStorage.setItem('insightbi_auth', 'true');
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError('ユーザー名またはパスワードが正しくありません');
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setIsAuthenticated(true);
+        setError('');
+        addAuditLog('login', `ユーザー "${username}" がログインしました`);
+      } else {
+        setError(data.error || 'ログインに失敗しました');
+        addAuditLog('login_failed', `ログイン失敗: ${username}`);
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('サーバーに接続できません');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('insightbi_auth');
+  const handleLogout = async () => {
+    addAuditLog('logout', 'ユーザーがログアウトしました');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     setIsAuthenticated(false);
     setUsername('');
     setPassword('');
+    setShowTimeoutWarning(false);
   };
 
   // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-slate-500">読み込み中...</div>
+        <div className="text-slate-500">{t.common.loading}</div>
       </div>
     );
   }
@@ -104,29 +183,29 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">InsightBI</h1>
-            <p className="text-slate-500 mt-2">経営ダッシュボード</p>
+            <h1 className="text-2xl font-bold text-slate-800">{t.login.title}</h1>
+            <p className="text-slate-500 mt-2">{t.login.subtitle}</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">ユーザー名</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t.login.username}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="ユーザー名を入力"
+                placeholder={t.login.usernamePlaceholder}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">パスワード</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t.login.password}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="パスワードを入力"
+                placeholder={t.login.passwordPlaceholder}
               />
             </div>
 
@@ -138,15 +217,28 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ログイン
+              {isSubmitting ? t.login.submitting : t.login.submit}
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-            <p className="text-xs text-slate-500 text-center">
-              デモアカウント: demo / insight2025
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="bg-slate-50 rounded-lg p-3 text-center">
+              <p className="text-xs text-slate-500 mb-2">デモ用ログイン情報</p>
+              <p className="text-sm font-mono text-slate-700">
+                {t.login.username}: <span className="font-bold">admin</span>
+              </p>
+              <p className="text-sm font-mono text-slate-700">
+                {t.login.password}: <span className="font-bold">admin123</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 text-center">
+            <p className="text-xs text-slate-400">
+              © 2025 InsightBI. All rights reserved.
             </p>
           </div>
         </div>
@@ -166,53 +258,163 @@ export default function MainDashboard({ performanceData, diData }: MainDashboard
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <span className="font-bold text-sm">InsightBI 経営ダッシュボード</span>
+              <span className="font-bold text-sm">{t.dashboard.title}</span>
             </div>
             <div className="flex gap-1">
-              {mainTabs.map((tab) => (
+              {(['monthly', 'pipeline', 'analytics'] as const).map((tabId) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveMain(tab.id as 'company' | 'di' | 'action')}
+                  key={tabId}
+                  onClick={() => setActiveMain(tabId)}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                    activeMain === tab.id
+                    activeMain === tabId
                       ? 'bg-white/20 text-white'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {tab.icon}
-                  <span className="hidden md:inline">{tab.label}</span>
+                  {tabIcons[tabId]}
+                  <span className="hidden md:inline">{t.nav[tabId]}</span>
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-white/70">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/70 hidden sm:inline">
                 {performanceData.summary.fiscalYear}
               </span>
+              {/* Language Toggle */}
+              <LanguageToggle className="text-white/70 hover:text-white hover:bg-white/10" />
+              {/* Data Management */}
+              <button
+                onClick={() => setIsImportOpen(true)}
+                className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title={t.dashboard.dataManagement}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7zm0 5h16M9 4v16" />
+                </svg>
+              </button>
+              {/* Help */}
+              <Link
+                href="/help"
+                className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title={t.common.help}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </Link>
+              {/* Settings */}
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                title={t.common.settings}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+              {/* Logout */}
               <button
                 onClick={handleLogout}
                 className="text-xs text-white/70 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
               >
-                ログアウト
+                {t.common.logout}
               </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Session Timeout Warning */}
+      {showTimeoutWarning && (
+        <div className="bg-amber-500 text-white px-4 py-2 text-center text-sm">
+          <span className="font-medium">{t.dashboard.sessionTimeoutMessage}</span>
+          <button
+            onClick={() => setShowTimeoutWarning(false)}
+            className="ml-4 px-2 py-0.5 bg-white/20 rounded hover:bg-white/30 transition-colors"
+          >
+            {t.common.close}
+          </button>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {activeMain === 'company' && (
-          <Dashboard data={performanceData} diData={diData} />
+        {activeMain === 'monthly' && (
+          <MonthlyFollowDashboard key={refreshKey} onNavigateToPipeline={handleNavigateToPipeline} />
         )}
-        {activeMain === 'di' && (
-          <DIDashboard data={diData} />
+        {activeMain === 'pipeline' && (
+          <PipelineManagement
+            key={`pipeline-${refreshKey}`}
+            initialFilter={pipelineFilter}
+            onClearFilter={() => setPipelineFilter({})}
+          />
         )}
-        {activeMain === 'action' && (
-          <div className="h-full overflow-auto bg-slate-50 p-4">
-            <ActionTracker data={performanceData} />
+        {activeMain === 'analytics' && (
+          <div className="h-full flex flex-col">
+            {/* Analytics Sub-tabs */}
+            <div className="bg-white border-b border-slate-200 px-4 py-2 flex-shrink-0">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setAnalyticsSubTab('charts')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    analyticsSubTab === 'charts'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.nav.charts}
+                </button>
+                <button
+                  onClick={() => setAnalyticsSubTab('company')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    analyticsSubTab === 'company'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.nav.company}
+                </button>
+                <button
+                  onClick={() => setAnalyticsSubTab('kpi')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    analyticsSubTab === 'kpi'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.nav.kpiTree}
+                </button>
+              </div>
+            </div>
+            {/* 分析コンテンツ */}
+            <div className="flex-1 overflow-hidden">
+              {analyticsSubTab === 'charts' && (
+                <AnalyticsDashboard key={`analytics-${refreshKey}`} />
+              )}
+              {analyticsSubTab === 'company' && (
+                <Dashboard data={performanceData} diData={diData} />
+              )}
+              {analyticsSubTab === 'kpi' && (
+                <BusinessTreeDashboard />
+              )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* 設定モーダル */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* データ管理モーダル */}
+      <DataManagementModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onDataChange={handleImportComplete}
+      />
     </div>
   );
 }
