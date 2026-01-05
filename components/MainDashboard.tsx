@@ -228,10 +228,10 @@ function MainDashboardContent({ performanceData, diData }: MainDashboardProps) {
             <div className="bg-slate-50 rounded-lg p-3 text-center">
               <p className="text-xs text-slate-500 mb-2">デモ用ログイン情報</p>
               <p className="text-sm font-mono text-slate-700">
-                {t.login.username}: <span className="font-bold">admin</span>
+                {t.login.username}: <span className="font-bold">demo</span>
               </p>
               <p className="text-sm font-mono text-slate-700">
-                {t.login.password}: <span className="font-bold">admin123</span>
+                {t.login.password}: <span className="font-bold">insight2025</span>
               </p>
             </div>
           </div>
