@@ -221,48 +221,67 @@ export default function AnalyticsDashboard() {
           {/* 累計売上グラフ */}
           <div className="bg-white rounded-lg border border-slate-200 p-4">
             <h2 className="text-sm font-bold text-slate-800 mb-4">累計売上 推移</h2>
-            <div className="h-48 relative overflow-hidden">
+            <div className="h-48 relative">
               {/* グリッド線 */}
-              <div className="absolute inset-0 flex flex-col justify-between">
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
                 {[0, 25, 50, 75, 100].reverse().map(pct => (
                   <div key={pct} className="flex items-center">
-                    <span className="text-[10px] text-slate-400 w-8">{Math.round(maxCumulative * pct / 100)}</span>
+                    <span className="text-[10px] text-slate-400 w-10 text-right pr-2">{Math.round(maxCumulative * pct / 100)}</span>
                     <div className="flex-1 border-t border-slate-100" />
                   </div>
                 ))}
               </div>
               {/* ライン */}
-              <svg className="absolute inset-0 ml-8 overflow-hidden" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ overflow: 'hidden' }}>
-                {/* 予算ライン */}
-                <polyline
-                  fill="none"
-                  stroke="#cbd5e1"
-                  strokeWidth="0.5"
-                  points={cumulativeData.map((d, i) => `${(i / 11) * 100},${100 - (d.cumBudget / maxCumulative) * 100}`).join(' ')}
-                />
-                {/* 実績ライン */}
-                {cumulativeData.some(d => d.cumActual !== null) && (
+              <div className="absolute inset-0 ml-10 mr-2">
+                <svg width="100%" height="100%" viewBox="0 0 110 100" preserveAspectRatio="none">
+                  {/* 予算ライン */}
+                  <polyline
+                    fill="none"
+                    stroke="#cbd5e1"
+                    strokeWidth="1.5"
+                    vectorEffect="non-scaling-stroke"
+                    points={cumulativeData.map((d, i) => `${(i / 11) * 100},${100 - (d.cumBudget / maxCumulative) * 100}`).join(' ')}
+                  />
+                  {/* 実績ライン */}
                   <polyline
                     fill="none"
                     stroke="#6366f1"
-                    strokeWidth="1"
+                    strokeWidth="2"
+                    vectorEffect="non-scaling-stroke"
                     points={cumulativeData
-                      .map((d, i) => d.cumActual !== null ? `${(i / 11) * 100},${100 - (d.cumActual / maxCumulative) * 100}` : null)
-                      .filter(Boolean)
+                      .filter(d => d.cumActual !== null)
+                      .map((d, _, arr) => {
+                        const originalIndex = cumulativeData.findIndex(cd => cd.month === d.month);
+                        return `${(originalIndex / 11) * 100},${100 - ((d.cumActual || 0) / maxCumulative) * 100}`;
+                      })
                       .join(' ')}
                   />
-                )}
-              </svg>
+                  {/* 実績ポイント */}
+                  {cumulativeData.filter(d => d.cumActual !== null).map(d => {
+                    const originalIndex = cumulativeData.findIndex(cd => cd.month === d.month);
+                    return (
+                      <circle
+                        key={d.month}
+                        cx={(originalIndex / 11) * 100}
+                        cy={100 - ((d.cumActual || 0) / maxCumulative) * 100}
+                        r="2"
+                        fill="#6366f1"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    );
+                  })}
+                </svg>
+              </div>
             </div>
-            <div className="flex justify-between text-[10px] text-slate-400 mt-2 ml-8">
+            <div className="flex justify-between text-[10px] text-slate-400 mt-2 ml-10 mr-2">
               {monthOrder.map(m => <span key={m}>{m}月</span>)}
             </div>
-            <div className="flex justify-center gap-4 mt-4 text-xs">
-              <div className="flex items-center gap-1">
+            <div className="flex justify-center gap-6 mt-4 text-xs">
+              <div className="flex items-center gap-2">
                 <div className="w-6 h-0.5 bg-slate-300" />
                 <span className="text-slate-500">予算累計</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <div className="w-6 h-0.5 bg-indigo-500" />
                 <span className="text-slate-500">実績累計</span>
               </div>
