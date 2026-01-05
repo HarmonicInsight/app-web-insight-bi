@@ -224,7 +224,19 @@ function MainDashboardContent({ performanceData, diData }: MainDashboardProps) {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="bg-slate-50 rounded-lg p-3 text-center">
+              <p className="text-xs text-slate-500 mb-2">デモ用ログイン情報</p>
+              <p className="text-sm font-mono text-slate-700">
+                {t.login.username}: <span className="font-bold">admin</span>
+              </p>
+              <p className="text-sm font-mono text-slate-700">
+                {t.login.password}: <span className="font-bold">admin123</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 text-center">
             <p className="text-xs text-slate-400">
               © 2025 InsightBI. All rights reserved.
             </p>

@@ -221,7 +221,7 @@ export default function AnalyticsDashboard() {
           {/* 累計売上グラフ */}
           <div className="bg-white rounded-lg border border-slate-200 p-4">
             <h2 className="text-sm font-bold text-slate-800 mb-4">累計売上 推移</h2>
-            <div className="h-48 relative">
+            <div className="h-48 relative overflow-hidden">
               {/* グリッド線 */}
               <div className="absolute inset-0 flex flex-col justify-between">
                 {[0, 25, 50, 75, 100].reverse().map(pct => (
@@ -232,7 +232,7 @@ export default function AnalyticsDashboard() {
                 ))}
               </div>
               {/* ライン */}
-              <svg className="absolute inset-0 ml-8" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <svg className="absolute inset-0 ml-8 overflow-hidden" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ overflow: 'hidden' }}>
                 {/* 予算ライン */}
                 <polyline
                   fill="none"
@@ -241,12 +241,17 @@ export default function AnalyticsDashboard() {
                   points={cumulativeData.map((d, i) => `${(i / 11) * 100},${100 - (d.cumBudget / maxCumulative) * 100}`).join(' ')}
                 />
                 {/* 実績ライン */}
-                <polyline
-                  fill="none"
-                  stroke="#6366f1"
-                  strokeWidth="1"
-                  points={cumulativeData.filter(d => d.cumActual !== null).map((d, i) => `${(i / 11) * 100},${100 - ((d.cumActual || 0) / maxCumulative) * 100}`).join(' ')}
-                />
+                {cumulativeData.some(d => d.cumActual !== null) && (
+                  <polyline
+                    fill="none"
+                    stroke="#6366f1"
+                    strokeWidth="1"
+                    points={cumulativeData
+                      .map((d, i) => d.cumActual !== null ? `${(i / 11) * 100},${100 - (d.cumActual / maxCumulative) * 100}` : null)
+                      .filter(Boolean)
+                      .join(' ')}
+                  />
+                )}
               </svg>
             </div>
             <div className="flex justify-between text-[10px] text-slate-400 mt-2 ml-8">
