@@ -57,11 +57,12 @@ export interface Department {
   confirmedYTD: number; // 確定売上（億円）
 }
 
+// 部署定義 - 通期目標と確定売上（月次実績91億円を部署比率で配分）
 export const departments: Department[] = [
-  { id: 'sales1', name: '営業1部', target: 70, confirmedYTD: 18.5 },
-  { id: 'sales2', name: '営業2部', target: 65, confirmedYTD: 15.2 },
-  { id: 'sales3', name: '営業3部', target: 65, confirmedYTD: 12.8 },
-];
+  { id: 'sales1', name: '営業1部', target: 70, confirmedYTD: 32.0 }, // 35%
+  { id: 'sales2', name: '営業2部', target: 65, confirmedYTD: 29.5 }, // 32.5%
+  { id: 'sales3', name: '営業3部', target: 65, confirmedYTD: 29.5 }, // 32.5%
+]; // 合計: 91.0億円 = 月次実績YTD
 
 export interface PipelineStageConfig {
   id: PipelineStage;
@@ -430,28 +431,32 @@ export interface PlanVersion {
   stageTargets?: { [stage: string]: number }; // 確度別目標
 }
 
-// サンプル計画バージョン
+// 計画バージョン（monthlyData.tsの予算と整合）
+// 通期予算200億円を月別に配分
 export const planVersions: PlanVersion[] = [
   {
     id: 'plan10',
     name: 'Plan1.0',
     createdAt: '2025-04-01',
     isActive: false,
-    monthlyTargets: { 4: 15, 5: 16, 6: 17, 7: 18, 8: 18, 9: 19, 10: 20, 11: 21, 12: 22, 1: 18, 2: 17, 3: 19 },
+    // 期初計画（やや保守的）
+    monthlyTargets: { 4: 14, 5: 15, 6: 16, 7: 15, 8: 13, 9: 16, 10: 17, 11: 16, 12: 19, 1: 15, 2: 14, 3: 18 }, // 合計188億
   },
   {
     id: 'plan12',
     name: 'Plan1.2',
     createdAt: '2025-07-01',
     isActive: false,
-    monthlyTargets: { 4: 15, 5: 16, 6: 18, 7: 19, 8: 19, 9: 20, 10: 21, 11: 22, 12: 23, 1: 19, 2: 18, 3: 20 },
+    // 中間見直し（上方修正）
+    monthlyTargets: { 4: 15, 5: 16, 6: 17, 7: 16, 8: 14, 9: 17, 10: 18, 11: 17, 12: 20, 1: 16, 2: 15, 3: 19 }, // 合計200億
   },
   {
     id: 'plan13',
     name: 'Plan1.3',
     createdAt: '2025-10-01',
     isActive: true,
-    monthlyTargets: { 4: 15, 5: 16, 6: 18, 7: 20, 8: 20, 9: 21, 10: 22, 11: 23, 12: 24, 1: 20, 2: 19, 3: 21 },
+    // 現行計画（実績ベース修正）- monthlyData.tsの予算と一致
+    monthlyTargets: { 4: 15, 5: 16, 6: 18, 7: 16, 8: 14, 9: 17, 10: 18, 11: 17, 12: 20, 1: 16, 2: 15, 3: 19 }, // 合計201億
     stageTargets: { A: 23, B: 38.8, C: 66.5, D: 105, O: 445 },
   },
 ];
